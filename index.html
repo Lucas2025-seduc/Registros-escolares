@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Registro de Ocorridos Escolar</title>
+    <title>Registros Escolares</title>
     
     <!-- PWA Configs -->
     <link rel="manifest" href="manifest.json">
@@ -47,6 +47,30 @@
     <script type="text/babel">
         // --- CÓDIGO REACT ORIGINAL MANTIDO ---
         const { useState, useRef, useEffect } = React;
+
+        // --- SISTEMA DE LICENCIAMENTO ---
+        const SALT_KEY = "LUCAS_SILVA_APP_SECRET_2025_SECURE"; // Segredo para gerar o hash
+
+        // Função simples de Hash (DJB2 Variant) para gerar licença baseada no ID
+        const generateLicenseKey = (deviceId) => {
+            const str = deviceId + SALT_KEY;
+            let hash = 5381;
+            for (let i = 0; i < str.length; i++) {
+                hash = ((hash << 5) + hash) + str.charCodeAt(i); /* hash * 33 + c */
+            }
+            // Retorna uma string Hexadecimal positiva e limpa
+            return (hash >>> 0).toString(16).toUpperCase().padStart(8, '0');
+        };
+
+        const getDeviceId = () => {
+            let id = localStorage.getItem('app_device_id');
+            if (!id) {
+                // Gera um ID aleatório se não existir
+                id = 'DEV-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+                localStorage.setItem('app_device_id', id);
+            }
+            return id;
+        };
 
         // --- Sistema de Ícones (Wrapper para Lucide Global) ---
         const createIcon = (iconName) => ({ size = 24, className = "", ...props }) => {
@@ -120,6 +144,9 @@
         const CheckCircle = createIcon('CheckCircle');
         const ShieldAlert = createIcon('ShieldAlert');
         const ShieldCheck = createIcon('ShieldCheck');
+        const Lock = createIcon('Lock');
+        const Unlock = createIcon('Unlock');
+        const Key = createIcon('Key');
 
         const TIPOS_OCORRENCIA = [
           "Advertência", "Ocorrência", "Elogio", "Busca Ativa", "Conflito Socioemocional", 
@@ -241,9 +268,91 @@
           );
         };
 
+        // --- COMPONENTE MODAL DE LICENÇA ---
+        const LicenseModal = ({ deviceId, onClose, onActivate }) => {
+            const [inputKey, setInputKey] = useState("");
+            const [error, setError] = useState("");
+
+            const handleBuyClick = () => {
+                const message = `Olá, gostaria de adquirir a licença vitalícia para o App de Registro de Ocorridos.\n\nMeu ID do Dispositivo é: *${deviceId}*`;
+                const url = `https://wa.me/558899361992?text=${encodeURIComponent(message)}`;
+                window.open(url, '_blank');
+            };
+
+            const handleValidate = () => {
+                const expected = generateLicenseKey(deviceId);
+                if (inputKey.trim().toUpperCase() === expected) {
+                    onActivate(inputKey.trim().toUpperCase());
+                } else {
+                    setError("Chave inválida. Verifique o código e tente novamente.");
+                }
+            };
+
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4 print:hidden animate-in">
+                    <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg overflow-hidden border-t-4 border-yellow-500">
+                        <div className="p-6 text-center">
+                            <div className="bg-yellow-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Lock size={32} className="text-yellow-600" />
+                            </div>
+                            <h2 className="text-2xl font-bold text-gray-800 mb-2">Versão Gratuita Limitada</h2>
+                            <p className="text-gray-600 mb-6">
+                                Você atingiu o limite de <strong>1 registro gratuito</strong>. 
+                                Para registrar ilimitadamente neste dispositivo, é necessário ativar uma licença.
+                            </p>
+                            
+                            <div className="bg-gray-100 p-4 rounded-lg mb-6 text-left">
+                                <p className="text-xs font-bold text-gray-500 uppercase mb-1">Seu ID do Dispositivo</p>
+                                <div className="flex justify-between items-center bg-white border p-2 rounded">
+                                    <code className="text-lg font-mono font-bold text-blue-600 select-all">{deviceId}</code>
+                                </div>
+                                <p className="text-[10px] text-gray-400 mt-1">Este ID é único para este aparelho/navegador.</p>
+                            </div>
+
+                            <button 
+                                onClick={handleBuyClick}
+                                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg shadow-md flex items-center justify-center gap-2 mb-4 transition transform hover:scale-[1.02]"
+                            >
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" className="w-5 h-5" alt="WhatsApp" />
+                                Comprar Licença via WhatsApp
+                            </button>
+                            
+                            <div className="border-t pt-4">
+                                <p className="text-sm font-medium text-gray-700 mb-2">Já tem a chave?</p>
+                                <div className="flex gap-2">
+                                    <input 
+                                        type="text" 
+                                        className="flex-1 border border-gray-300 rounded p-2 uppercase text-center font-mono"
+                                        placeholder="INSIRA A CHAVE AQUI"
+                                        value={inputKey}
+                                        onChange={(e) => {setInputKey(e.target.value); setError('');}}
+                                    />
+                                    <button 
+                                        onClick={handleValidate}
+                                        className="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700"
+                                    >
+                                        Ativar
+                                    </button>
+                                </div>
+                                {error && <p className="text-red-500 text-sm mt-2 font-bold">{error}</p>}
+                            </div>
+                        </div>
+                        <div className="bg-gray-50 p-3 text-center">
+                            <button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-sm underline">
+                                Fechar e visualizar registros existentes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         function App() {
           const [view, setView] = useState('list');
           const [records, setRecords] = useState([]);
+          // Estado para controlar erro no carregamento da logo
+          const [logoError, setLogoError] = useState(false);
+
           const [selectedRecord, setSelectedRecord] = useState(null);
           const [editingId, setEditingId] = useState(null); 
           const [reminders, setReminders] = useState([]);
@@ -256,6 +365,12 @@
             aluno: '', nivelEnsino: '', anoTurma: '', letraTurma: '', tipo: '', periodo: '', presentes: '',
             dataInicio: '', dataFim: '', modalidade: '', local: '', conteudo: '' 
           });
+          
+          // Estados de Licença
+          const [deviceId, setDeviceId] = useState('');
+          const [isLicensed, setIsLicensed] = useState(false);
+          const [showLicenseModal, setShowLicenseModal] = useState(false);
+
           const [formData, setFormData] = useState({
             tipoSelecionado: TIPOS_OCORRENCIA[0], tipoOutro: '', modalidade: 'Presencial', regime: 'Bimestre', 
             periodo: '1º Bimestre', data: new Date().toISOString().split('T')[0],
@@ -269,6 +384,14 @@
           const [currentSigner, setCurrentSigner] = useState({ name: '', role: '' });
           
           useEffect(() => {
+            // Inicializar Device ID e Licença
+            const id = getDeviceId();
+            setDeviceId(id);
+            const savedKey = localStorage.getItem('app_license_key');
+            if (savedKey && savedKey === generateLicenseKey(id)) {
+                setIsLicensed(true);
+            }
+
             const saved = localStorage.getItem('registro_ocorridos_db');
             if (saved) { try { setRecords(JSON.parse(saved)); } catch (e) { console.error("Erro ao carregar dados", e); } }
             const savedSchool = localStorage.getItem('registro_ocorridos_school');
@@ -288,6 +411,26 @@
           };
           const completeReminder = (id) => { setReminders(reminders.filter(item => item.id !== id)); };
 
+          const handleActivateLicense = (key) => {
+              localStorage.setItem('app_license_key', key);
+              setIsLicensed(true);
+              setShowLicenseModal(false);
+              alert("Licença ativada com sucesso! Você agora tem acesso ilimitado.");
+          };
+
+          // --- Verificação de Bloqueio ---
+          const checkLimitAndProceed = (actionCallback) => {
+              if (isLicensed) {
+                  actionCallback();
+              } else {
+                  if (records.length >= 1) {
+                      setShowLicenseModal(true);
+                  } else {
+                      actionCallback();
+                  }
+              }
+          };
+
           const handleExport = () => {
             const dataStr = JSON.stringify(records, null, 2);
             const blob = new Blob([dataStr], { type: 'application/json' });
@@ -303,8 +446,16 @@
             reader.onload = (event) => {
               try {
                 const importedData = JSON.parse(event.target.result);
-                if (Array.isArray(importedData) && window.confirm(`Isso substituirá os registros atuais. Deseja continuar?`)) {
-                    setRecords(importedData); alert('Dados importados com sucesso!');
+                if (Array.isArray(importedData)) {
+                    // Verifica licença ao importar também
+                    if (!isLicensed && importedData.length > 1) {
+                        alert("Você não pode importar mais de 1 registro na versão gratuita. Ative a licença primeiro.");
+                        setShowLicenseModal(true);
+                        return;
+                    }
+                    if(window.confirm(`Isso substituirá os registros atuais. Deseja continuar?`)) {
+                        setRecords(importedData); alert('Dados importados com sucesso!');
+                    }
                 }
               } catch (err) { alert('Erro ao ler o arquivo.'); }
             };
@@ -313,6 +464,13 @@
 
           const handleSaveRecord = () => {
             if (!formData.aluno || !formData.descricao) { alert("Nome do aluno e descrição são obrigatórios."); return; }
+            
+            // Verifica limite antes de salvar um NOVO registro
+            if (!editingId && !isLicensed && records.length >= 1) {
+                setShowLicenseModal(true);
+                return;
+            }
+
             const tipoFinal = formData.tipoSelecionado === 'Outros' ? formData.tipoOutro : formData.tipoSelecionado;
             const localFinal = formData.localSelecionado === 'Outro' ? formData.localOutro : formData.localSelecionado;
             const recordData = { ...formData, tipo: tipoFinal, local: localFinal };
@@ -385,6 +543,7 @@
 
           const filteredRecords = records.filter(r => {
             const matchAluno = filters.aluno ? r.aluno.toLowerCase().includes(filters.aluno.toLowerCase()) : true;
+            // ... (restante dos filtros igual)
             const matchTipo = filters.tipo ? r.tipo === filters.tipo : true;
             const matchPeriodo = filters.periodo ? r.periodo === filters.periodo : true;
             const matchPresentes = filters.presentes ? r.outrosPresentes && r.outrosPresentes.toLowerCase().includes(filters.presentes.toLowerCase()) : true;
@@ -409,8 +568,34 @@
             <div className="min-h-screen bg-slate-50 font-sans text-slate-800 print:bg-white flex flex-col">
               <header className="bg-blue-900 text-white p-4 shadow-lg sticky top-0 z-40 print:hidden">
                 <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-2">
-                  <div className="flex items-center gap-3"><BookOpen size={32} className="text-yellow-400" />
-                    <div><h1 className="text-xl font-bold tracking-tight">Registro de Ocorridos</h1><p className="text-xs text-blue-200">Livro de Ata Digital Escolar</p></div>
+                  <div className="flex items-center gap-3">
+                    {/* Lógica da Logo: Tenta carregar a imagem, se falhar usa o ícone */}
+                    {!logoError ? (
+                        <img 
+                            src="./image_942213.jpg" 
+                            alt="Logo da Escola" 
+                            className="w-12 h-12 rounded-lg object-cover border-2 border-yellow-400 bg-white"
+                            onError={() => setLogoError(true)}
+                        />
+                    ) : (
+                        <BookOpen size={32} className="text-yellow-400" />
+                    )}
+                    <div>
+                        <h1 className="text-xl font-bold tracking-tight">Registros escolares</h1>
+                        <p className="text-xs text-blue-200">Aplicativo desenvolvido por Lucas Sebastião Barbosa Silva</p>
+                    </div>
+                  </div>
+                  {/* Status da Licença */}
+                  <div className="flex items-center gap-2">
+                     {!isLicensed ? (
+                        <button onClick={() => setShowLicenseModal(true)} className="flex items-center gap-1 text-[10px] md:text-xs bg-yellow-500 hover:bg-yellow-600 text-black font-bold px-3 py-1 rounded-full animate-pulse transition">
+                             <Lock size={14} /> Versão Gratuita ({records.length}/1) - Ativar
+                        </button>
+                     ) : (
+                        <div className="flex items-center gap-1 text-[10px] md:text-xs bg-green-600 text-white font-bold px-3 py-1 rounded-full opacity-90">
+                             <Unlock size={14} /> Licença Ativa
+                        </div>
+                     )}
                   </div>
                 </div>
               </header>
@@ -440,7 +625,15 @@
                          <div className="grid grid-cols-2 gap-2"><div><label className="text-xs font-semibold text-gray-500 mb-1 block">Modalidade</label><select className="w-full px-2 py-2 border rounded bg-gray-50 text-sm" value={filters.modalidade} onChange={(e) => setFilters({...filters, modalidade: e.target.value})}><option value="">Todas</option><option value="Presencial">Presencial</option><option value="Online">Online</option></select></div><div><label className="text-xs font-semibold text-gray-500 mb-1 block">Local</label><input type="text" className="w-full px-2 py-2 border rounded bg-gray-50 text-sm" placeholder="Buscar local..." value={filters.local} onChange={(e) => setFilters({...filters, local: e.target.value})} /></div></div>
                          <div><label className="text-xs font-semibold text-gray-500 mb-1 block">Tipo de Registro</label><select className="w-full px-2 py-2 border rounded bg-gray-50 text-sm" value={filters.tipo} onChange={(e) => setFilters({...filters, tipo: e.target.value})}><option value="">Todos</option>{TIPOS_OCORRENCIA.filter(t => t !== 'Outros').map(t => <option key={t} value={t}>{t}</option>)}<option value="Outros">Outros</option></select></div>
                          <div><label className="text-xs font-semibold text-gray-500 mb-1 block">Período</label><select className="w-full px-2 py-2 border rounded bg-gray-50 text-sm" value={filters.periodo} onChange={(e) => setFilters({...filters, periodo: e.target.value})}><option value="">Todos</option><optgroup label="Bimestres">{BIMESTRES.map(b => <option key={b} value={b}>{b}</option>)}</optgroup><optgroup label="Semestres">{SEMESTRES.map(s => <option key={s} value={s}>{s}</option>)}</optgroup></select></div>
-                         <div className="flex items-end lg:col-span-3"><button onClick={() => { resetForm(); setView('create'); }} className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg flex items-center justify-center gap-2 font-medium transition shadow-md whitespace-nowrap"><Plus size={20} /> Novo Registro</button></div>
+                         <div className="flex items-end lg:col-span-3">
+                            <button 
+                                onClick={() => checkLimitAndProceed(() => { resetForm(); setView('create'); })} 
+                                className={`w-full text-white py-2 rounded-lg flex items-center justify-center gap-2 font-medium transition shadow-md whitespace-nowrap ${!isLicensed && records.length >= 1 ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+                            >
+                                {(!isLicensed && records.length >= 1) ? <Lock size={20} /> : <Plus size={20} />} 
+                                {(!isLicensed && records.length >= 1) ? 'Limite Atingido (Versão Gratuita)' : 'Novo Registro'}
+                            </button>
+                         </div>
                       </div>
                     </div>
 
@@ -466,6 +659,7 @@
                   <div className="bg-white rounded-lg shadow-lg overflow-hidden print:hidden">
                     <div className="bg-gray-50 p-4 border-b flex justify-between items-center sticky top-0 z-30"><h2 className="text-lg font-bold flex items-center gap-2">{editingId ? <Edit size={20} /> : <FileText size={20} />} {editingId ? 'Editar Ocorrido' : 'Novo Ocorrido'}</h2><button onClick={() => { setView('list'); resetForm(); }} className="text-gray-500 hover:text-gray-700">Cancelar</button></div>
                     <div className="p-6 space-y-6">
+                      {/* ... Campos de formulário mantidos exatamente iguais ... */}
                       <div className="grid md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <div className="md:col-span-2 grid md:grid-cols-2 gap-4">
                             <div><label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Registro</label><select className="w-full p-2 border rounded bg-white mb-2" value={formData.tipoSelecionado} onChange={e => setFormData({...formData, tipoSelecionado: e.target.value})}>{TIPOS_OCORRENCIA.map(t => <option key={t} value={t}>{t}</option>)}</select>{formData.tipoSelecionado === 'Outros' && (<input type="text" className="w-full p-2 border border-blue-300 rounded bg-white animate-in" placeholder="Especifique o tipo" value={formData.tipoOutro} onChange={e => setFormData({...formData, tipoOutro: e.target.value})} autoFocus />)}</div>
@@ -535,10 +729,30 @@
                 )}
               </main>
 
-              <footer className="bg-slate-100 border-t p-4 text-center text-[10px] text-gray-500 print:hidden mt-auto"><div className="max-w-3xl mx-auto flex flex-col items-center gap-1"><ShieldCheck size={16} className="text-gray-400 mb-1" /><p><strong>Proteção de Dados:</strong> Em conformidade com a <strong>Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018)</strong>.</p></div></footer>
+              <footer className="bg-slate-100 border-t p-6 text-center text-[10px] text-gray-500 print:hidden mt-auto space-y-4">
+                <div className="max-w-3xl mx-auto flex flex-col items-center gap-1 border-b border-gray-200 pb-4">
+                    <ShieldCheck size={16} className="text-gray-400 mb-1" />
+                    <p><strong>Proteção de Dados:</strong> Em conformidade com a <strong>Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018)</strong>.</p>
+                </div>
+                
+                <div className="max-w-4xl mx-auto text-gray-400 leading-relaxed text-[9px]">
+                    <p className="font-bold mb-1">AVISO LEGAL DE DIREITOS AUTORAIS</p>
+                    <p className="mb-2">© 2025 Maria Jaqueline da Silva Pereira - CNPJ: 62.323.279/0001-00. Todos os direitos reservados.</p>
+                    <p>
+                        Este software é protegido pelas leis de propriedade intelectual e direitos autorais internacionais.
+                        É estritamente proibida a cópia, reprodução, redistribuição, engenharia reversa, descompilação ou modificação do código-fonte deste aplicativo, 
+                        total ou parcialmente, sem autorização prévia e expressa do detentor dos direitos. A violação destes termos sujeitará o infrator às sanções civis 
+                        e criminais previstas na Lei nº 9.610/98 (Lei de Direitos Autorais) e Lei nº 9.609/98 (Lei de Software).
+                    </p>
+                </div>
+              </footer>
+
               {showPrintModal && (<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 print:hidden animate-in"><div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6"><div className="flex justify-between items-center mb-4"><h3 className="text-lg font-bold text-gray-800 flex items-center gap-2"><Printer className="text-blue-600" /> Preparar Impressão</h3><button onClick={() => setShowPrintModal(false)} className="text-gray-400 hover:text-red-500"><X size={20} /></button></div><div className="mb-4"><label className="block text-sm font-medium text-gray-700 mb-2">Nome da Escola</label><div className="relative"><School className="absolute left-3 top-3 text-gray-400" size={18} /><input type="text" className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: Escola Municipal Joaquim Távora" value={tempSchoolName} onChange={(e) => setTempSchoolName(e.target.value)} autoFocus /></div></div><div className="flex justify-end gap-3 pt-2 border-t mt-4"><button onClick={() => setShowPrintModal(false)} className="px-4 py-2 border rounded text-gray-600 hover:bg-gray-50 font-medium">Cancelar</button><button onClick={confirmPrint} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-bold shadow flex items-center gap-2"><Printer size={16} /> Confirmar e Imprimir</button></div></div></div>)}
               {showSignaturePad && (<SignaturePad label={`${currentSigner.role} - ${currentSigner.name}`} onSave={handleSignatureSave} onCancel={() => setShowSignaturePad(false)} />)}
-              <footer className="md:hidden fixed bottom-0 w-full bg-white border-t p-2 flex justify-around text-xs text-gray-600 z-30 print:hidden"><button onClick={() => { setView('list'); resetForm(); }} className={`flex flex-col items-center p-2 ${view === 'list' ? 'text-blue-600' : ''}`}><BookOpen size={20} /> Início</button><button onClick={() => { setView('create'); resetForm(); }} className={`flex flex-col items-center p-2 ${view === 'create' && !editingId ? 'text-blue-600' : ''}`}><Plus size={20} /> Novo</button></footer>
+              {/* MODAL DE LICENÇA */}
+              {showLicenseModal && (<LicenseModal deviceId={deviceId} onClose={() => setShowLicenseModal(false)} onActivate={handleActivateLicense} />)}
+              
+              <footer className="md:hidden fixed bottom-0 w-full bg-white border-t p-2 flex justify-around text-xs text-gray-600 z-30 print:hidden"><button onClick={() => { setView('list'); resetForm(); }} className={`flex flex-col items-center p-2 ${view === 'list' ? 'text-blue-600' : ''}`}><BookOpen size={20} /> Início</button><button onClick={() => checkLimitAndProceed(() => { setView('create'); resetForm(); })} className={`flex flex-col items-center p-2 ${view === 'create' && !editingId ? 'text-blue-600' : ''}`}><Plus size={20} /> Novo</button></footer>
             </div>
           );
         }
