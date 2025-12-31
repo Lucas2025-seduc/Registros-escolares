@@ -1,74 +1,763 @@
-const CACHE_NAME = 'ocorridos-cache-v1';
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Registro de Ocorridos Escolar</title>
+    
+    <!-- PWA Configs -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1e3a8a">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="description" content="Livro de Ata Digital Escolar para registro e pesquisa de ocorridos.">
 
-// Lista CRÍTICA de recursos para funcionamento Offline.
-// Baseado na análise do seu HTML original.
-const PRECACHE_URLS = [
-  './',
-  './index.html',
-  './manifest.json',
-  './icon-192.png',
-  './icon-512.png',
-  // Dependências CDN vitais detectadas no seu código
-  'https://unpkg.com/react@18/umd/react.production.min.js',
-  'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js',
-  'https://unpkg.com/@babel/standalone/babel.min.js',
-  'https://cdn.tailwindcss.com',
-  'https://unpkg.com/lucide@latest'
-];
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel para compilar JSX no navegador -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons (Versão Vanilla JS) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
 
-// Instalação: Cache inicial dos arquivos estáticos
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => {
-        console.log('[Service Worker] Pre-caching external resources');
-        return cache.addAll(PRECACHE_URLS);
-      })
-      .then(() => self.skipWaiting()) // Força ativação imediata
-  );
-});
+    <style>
+        /* Ajustes para impressão */
+        @media print {
+            @page { margin: 1cm; size: A4; }
+            body { -webkit-print-color-adjust: exact; }
+            .no-print { display: none !important; }
+            .break-inside-avoid { page-break-inside: avoid; }
+        }
+        
+        /* Melhoria para toque em mobile */
+        .touch-action-none { touch-action: none; }
+        
+        /* Animações simples */
+        .animate-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+    <div id="root"></div>
 
-// Ativação: Limpeza de caches antigos
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('[Service Worker] Removendo cache antigo:', cacheName);
-            return caches.delete(cacheName);
+    <script type="text/babel">
+        // --- CÓDIGO REACT ORIGINAL MANTIDO ---
+        const { useState, useRef, useEffect } = React;
+
+        // --- SISTEMA DE LICENCIAMENTO ---
+        const SALT_KEY = "LUCAS_SILVA_APP_SECRET_2025_SECURE"; // Segredo para gerar o hash
+
+        // Função simples de Hash (DJB2 Variant) para gerar licença baseada no ID
+        const generateLicenseKey = (deviceId) => {
+            const str = deviceId + SALT_KEY;
+            let hash = 5381;
+            for (let i = 0; i < str.length; i++) {
+                hash = ((hash << 5) + hash) + str.charCodeAt(i); /* hash * 33 + c */
+            }
+            // Retorna uma string Hexadecimal positiva e limpa
+            return (hash >>> 0).toString(16).toUpperCase().padStart(8, '0');
+        };
+
+        const getDeviceId = () => {
+            let id = localStorage.getItem('app_device_id');
+            if (!id) {
+                // Gera um ID aleatório se não existir
+                id = 'DEV-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+                localStorage.setItem('app_device_id', id);
+            }
+            return id;
+        };
+
+        // --- Sistema de Ícones (Wrapper para Lucide Global) ---
+        const createIcon = (iconName) => ({ size = 24, className = "", ...props }) => {
+            const [svgHtml, setSvgHtml] = useState(null);
+            
+            useEffect(() => {
+                if (window.lucide && window.lucide.icons && window.lucide.icons[iconName]) {
+                    const iconData = window.lucide.icons[iconName];
+                    if (Array.isArray(iconData)) {
+                         // Lógica de compatibilidade mantida
+                    }
+                }
+            }, [iconName, size, className]);
+
+            const ref = useRef(null);
+            
+            useEffect(() => {
+                if (ref.current) {
+                    ref.current.innerHTML = ''; 
+                    const i = document.createElement('i');
+                    i.setAttribute('data-lucide', iconName.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase());
+                    i.setAttribute('width', size);
+                    i.setAttribute('height', size);
+                    if(className) i.setAttribute('class', className);
+                    ref.current.appendChild(i);
+                    // Verifica se o Lucide carregou antes de chamar
+                    if (window.lucide && window.lucide.createIcons) {
+                        window.lucide.createIcons({
+                            root: ref.current,
+                            nameAttr: 'data-lucide',
+                            attrs: {
+                                class: className,
+                                width: size,
+                                height: size
+                            }
+                        });
+                    }
+                }
+            }, [iconName, size, className]);
+
+            return <span ref={ref} style={{ display: 'inline-flex' }} {...props} />;
+        };
+
+        const BookOpen = createIcon('BookOpen');
+        const Plus = createIcon('Plus');
+        const Save = createIcon('Save');
+        const Search = createIcon('Search');
+        const Download = createIcon('Download');
+        const Upload = createIcon('Upload');
+        const Trash2 = createIcon('Trash2');
+        const PenTool = createIcon('PenTool');
+        const Camera = createIcon('Camera');
+        const ImageIcon = createIcon('Image'); 
+        const X = createIcon('X');
+        const Check = createIcon('Check');
+        const Calendar = createIcon('Calendar');
+        const User = createIcon('User');
+        const MapPin = createIcon('MapPin');
+        const FileText = createIcon('FileText');
+        const Users = createIcon('Users');
+        const Monitor = createIcon('Monitor');
+        const Printer = createIcon('Printer');
+        const Filter = createIcon('Filter');
+        const SlidersHorizontal = createIcon('SlidersHorizontal');
+        const ChevronDown = createIcon('ChevronDown');
+        const ChevronUp = createIcon('ChevronUp');
+        const GraduationCap = createIcon('GraduationCap');
+        const School = createIcon('School');
+        const Edit = createIcon('Edit');
+        const Bell = createIcon('Bell');
+        const CheckCircle = createIcon('CheckCircle');
+        const ShieldAlert = createIcon('ShieldAlert');
+        const ShieldCheck = createIcon('ShieldCheck');
+        const Lock = createIcon('Lock');
+        const Unlock = createIcon('Unlock');
+        const Key = createIcon('Key');
+
+        const TIPOS_OCORRENCIA = [
+          "Advertência", "Ocorrência", "Elogio", "Busca Ativa", "Conflito Socioemocional", 
+          "Orientação Pedagógica", "Registro de Reunião com Pais/Responsáveis", "Outros"
+        ];
+        const LOCAIS = [
+          "Sala de aula", "Coordenação", "Sala da direção de turma", "Secretaria", "Laboratório", 
+          "Direção", "Sala de professores", "Biblioteca", "Refeitório", "Pátio", "Mecanografia", 
+          "Fora da escola", "WhatsApp", "Email", "Ligação telefônica", "Outro"
+        ];
+        const BIMESTRES = ["1º Bimestre", "2º Bimestre", "3º Bimestre", "4º Bimestre", "Recuperação Final"];
+        const SEMESTRES = ["1º Semestre", "2º Semestre", "Recuperação Final"];
+        const NIVEIS_ENSINO = ["Ensino Fundamental", "Ensino Médio", "Ensino Superior"];
+
+        const formatDateTime = (isoString) => {
+          if (!isoString) return '';
+          const date = new Date(isoString);
+          return date.toLocaleString('pt-BR');
+        };
+
+        const formatTurma = (record) => {
+          if (record.nivelEnsino && record.anoTurma && record.letraTurma) {
+            let siglaNivel = 'EF';
+            if (record.nivelEnsino === 'Ensino Médio') siglaNivel = 'EM';
+            if (record.nivelEnsino === 'Ensino Superior') siglaNivel = 'ES';
+            return `${record.anoTurma}º ${record.letraTurma} (${siglaNivel})`;
           }
-        })
-      );
-    }).then(() => self.clients.claim()) // Assume controle das páginas imediatamente
-  );
-});
+          return record.turma || 'Sem turma';
+        };
 
-// Fetch: Estratégia Stale-While-Revalidate
-// Serve o conteúdo do cache rapidamente, enquanto busca atualização na rede em segundo plano
-self.addEventListener('fetch', (event) => {
-  // Ignora requisições não-GET ou esquemas chrome-extension, etc.
-  if (event.request.method !== 'GET' || !event.request.url.startsWith('http')) {
-    return;
-  }
+        const SignaturePad = ({ onSave, onCancel, label }) => {
+          const canvasRef = useRef(null);
+          const [isDrawing, setIsDrawing] = useState(false);
 
-  event.respondWith(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.match(event.request).then((cachedResponse) => {
-        const fetchPromise = fetch(event.request).then((networkResponse) => {
-          // Se a resposta da rede for válida, atualiza o cache
-          if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic' || networkResponse.type === 'cors') {
-            cache.put(event.request, networkResponse.clone());
-          }
-          return networkResponse;
-        }).catch(() => {
-            // Fallback para erros de rede (opcional: retornar página offline customizada)
-             console.log('[Service Worker] Falha na rede e sem cache para:', event.request.url);
-        });
+          useEffect(() => {
+            const canvas = canvasRef.current;
+            if (canvas) {
+              setTimeout(() => {
+                  const parentWidth = canvas.parentElement.offsetWidth;
+                  canvas.width = parentWidth > 0 ? parentWidth : 300; 
+                  canvas.height = 200; 
+                  const ctx = canvas.getContext('2d');
+                  ctx.lineWidth = 2;
+                  ctx.lineCap = 'round';
+                  ctx.strokeStyle = '#000';
+              }, 50);
+            }
+          }, []);
 
-        // Retorna o cache se existir, senão espera a rede
-        return cachedResponse || fetchPromise;
-      });
-    })
-  );
-});
+          const getCoords = (e) => {
+             const canvas = canvasRef.current;
+             const rect = canvas.getBoundingClientRect();
+             const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+             const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+             return { x: clientX - rect.left, y: clientY - rect.top };
+          };
+
+          const startDrawing = (e) => {
+            const { x, y } = getCoords(e);
+            const ctx = canvasRef.current.getContext('2d');
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            setIsDrawing(true);
+          };
+
+          const draw = (e) => {
+            if (!isDrawing) return;
+            e.preventDefault(); 
+            const { x, y } = getCoords(e);
+            const ctx = canvasRef.current.getContext('2d');
+            ctx.lineTo(x, y);
+            ctx.stroke();
+          };
+
+          const stopDrawing = () => { setIsDrawing(false); };
+          const clearCanvas = () => {
+            const canvas = canvasRef.current;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+          };
+          const handleSave = () => {
+            const canvas = canvasRef.current;
+            onSave(canvas.toDataURL());
+          };
+
+          return (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 print:hidden">
+              <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden animate-in">
+                <div className="p-4 border-b bg-gray-50 flex justify-between items-center">
+                  <div>
+                    <h3 className="font-bold text-gray-700">Coletar Assinatura</h3>
+                    <p className="text-sm text-blue-600 font-medium">{label}</p>
+                  </div>
+                  <button onClick={onCancel} className="text-gray-500 hover:text-red-500"><X size={24} /></button>
+                </div>
+                <div className="p-4 bg-gray-100">
+                  <div className="bg-white border-2 border-dashed border-gray-300 rounded shadow-inner touch-action-none">
+                    <canvas
+                      ref={canvasRef}
+                      className="w-full touch-action-none cursor-crosshair block"
+                      onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={stopDrawing} onMouseLeave={stopDrawing}
+                      onTouchStart={startDrawing} onTouchMove={draw} onTouchEnd={stopDrawing}
+                      style={{ touchAction: 'none' }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2 text-center">Use o dedo ou mouse para assinar.</p>
+                </div>
+                <div className="p-4 border-t flex justify-between bg-white">
+                  <button onClick={clearCanvas} className="text-sm text-red-600 hover:underline font-medium">Limpar</button>
+                  <div className="flex gap-2">
+                    <button onClick={onCancel} className="px-4 py-2 border rounded hover:bg-gray-50 text-sm">Cancelar</button>
+                    <button onClick={handleSave} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2 text-sm font-bold shadow-sm">
+                      <Check size={16} /> Confirmar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        // --- COMPONENTE MODAL DE LICENÇA ---
+        const LicenseModal = ({ deviceId, onClose, onActivate }) => {
+            const [inputKey, setInputKey] = useState("");
+            const [error, setError] = useState("");
+
+            const handleBuyClick = () => {
+                const message = `Olá, gostaria de adquirir a licença vitalícia para o App de Registro de Ocorridos.\n\nMeu ID do Dispositivo é: *${deviceId}*`;
+                const url = `https://wa.me/558899361992?text=${encodeURIComponent(message)}`;
+                window.open(url, '_blank');
+            };
+
+            const handleValidate = () => {
+                const expected = generateLicenseKey(deviceId);
+                if (inputKey.trim().toUpperCase() === expected) {
+                    onActivate(inputKey.trim().toUpperCase());
+                } else {
+                    setError("Chave inválida. Verifique o código e tente novamente.");
+                }
+            };
+
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4 print:hidden animate-in">
+                    <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg overflow-hidden border-t-4 border-yellow-500">
+                        <div className="p-6 text-center">
+                            <div className="bg-yellow-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Lock size={32} className="text-yellow-600" />
+                            </div>
+                            <h2 className="text-2xl font-bold text-gray-800 mb-2">Versão Gratuita Limitada</h2>
+                            <p className="text-gray-600 mb-6">
+                                Você atingiu o limite de <strong>1 registro gratuito</strong>. 
+                                Para registrar ilimitadamente neste dispositivo, é necessário ativar uma licença.
+                            </p>
+                            
+                            <div className="bg-gray-100 p-4 rounded-lg mb-6 text-left">
+                                <p className="text-xs font-bold text-gray-500 uppercase mb-1">Seu ID do Dispositivo</p>
+                                <div className="flex justify-between items-center bg-white border p-2 rounded">
+                                    <code className="text-lg font-mono font-bold text-blue-600 select-all">{deviceId}</code>
+                                </div>
+                                <p className="text-[10px] text-gray-400 mt-1">Este ID é único para este aparelho/navegador.</p>
+                            </div>
+
+                            <button 
+                                onClick={handleBuyClick}
+                                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg shadow-md flex items-center justify-center gap-2 mb-4 transition transform hover:scale-[1.02]"
+                            >
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" className="w-5 h-5" alt="WhatsApp" />
+                                Comprar Licença via WhatsApp
+                            </button>
+                            
+                            <div className="border-t pt-4">
+                                <p className="text-sm font-medium text-gray-700 mb-2">Já tem a chave?</p>
+                                <div className="flex gap-2">
+                                    <input 
+                                        type="text" 
+                                        className="flex-1 border border-gray-300 rounded p-2 uppercase text-center font-mono"
+                                        placeholder="INSIRA A CHAVE AQUI"
+                                        value={inputKey}
+                                        onChange={(e) => {setInputKey(e.target.value); setError('');}}
+                                    />
+                                    <button 
+                                        onClick={handleValidate}
+                                        className="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700"
+                                    >
+                                        Ativar
+                                    </button>
+                                </div>
+                                {error && <p className="text-red-500 text-sm mt-2 font-bold">{error}</p>}
+                            </div>
+                        </div>
+                        <div className="bg-gray-50 p-3 text-center">
+                            <button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-sm underline">
+                                Fechar e visualizar registros existentes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        function App() {
+          const [view, setView] = useState('list');
+          const [records, setRecords] = useState([]);
+          const [selectedRecord, setSelectedRecord] = useState(null);
+          const [editingId, setEditingId] = useState(null); 
+          const [reminders, setReminders] = useState([]);
+          const [newReminderText, setNewReminderText] = useState("");
+          const [showPrintModal, setShowPrintModal] = useState(false);
+          const [schoolName, setSchoolName] = useState('');
+          const [tempSchoolName, setTempSchoolName] = useState('');
+          const [showFilters, setShowFilters] = useState(false);
+          const [filters, setFilters] = useState({
+            aluno: '', nivelEnsino: '', anoTurma: '', letraTurma: '', tipo: '', periodo: '', presentes: '',
+            dataInicio: '', dataFim: '', modalidade: '', local: '', conteudo: '' 
+          });
+          
+          // Estados de Licença
+          const [deviceId, setDeviceId] = useState('');
+          const [isLicensed, setIsLicensed] = useState(false);
+          const [showLicenseModal, setShowLicenseModal] = useState(false);
+
+          const [formData, setFormData] = useState({
+            tipoSelecionado: TIPOS_OCORRENCIA[0], tipoOutro: '', modalidade: 'Presencial', regime: 'Bimestre', 
+            periodo: '1º Bimestre', data: new Date().toISOString().split('T')[0],
+            hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+            localSelecionado: 'Sala de aula', localOutro: '', aluno: '', nivelEnsino: 'Ensino Fundamental',
+            anoTurma: '', letraTurma: '', turma: '', outrosPresentes: '', descricao: '', providencias: '', assinaturas: []
+          });
+          const [customSignerName, setCustomSignerName] = useState('');
+          const [customSignerRole, setCustomSignerRole] = useState('');
+          const [showSignaturePad, setShowSignaturePad] = useState(false);
+          const [currentSigner, setCurrentSigner] = useState({ name: '', role: '' });
+          
+          useEffect(() => {
+            // Inicializar Device ID e Licença
+            const id = getDeviceId();
+            setDeviceId(id);
+            const savedKey = localStorage.getItem('app_license_key');
+            if (savedKey && savedKey === generateLicenseKey(id)) {
+                setIsLicensed(true);
+            }
+
+            const saved = localStorage.getItem('registro_ocorridos_db');
+            if (saved) { try { setRecords(JSON.parse(saved)); } catch (e) { console.error("Erro ao carregar dados", e); } }
+            const savedSchool = localStorage.getItem('registro_ocorridos_school');
+            if (savedSchool) setSchoolName(savedSchool);
+            const savedReminders = localStorage.getItem('registro_ocorridos_lembretes');
+            if (savedReminders) { try { setReminders(JSON.parse(savedReminders)); } catch (e) { console.error(e); } }
+          }, []);
+
+          useEffect(() => { localStorage.setItem('registro_ocorridos_db', JSON.stringify(records)); }, [records]);
+          useEffect(() => { localStorage.setItem('registro_ocorridos_lembretes', JSON.stringify(reminders)); }, [reminders]);
+          
+          const handleSetSchoolName = (name) => { setSchoolName(name); localStorage.setItem('registro_ocorridos_school', name); };
+          const addReminder = () => {
+              if (!newReminderText.trim()) return;
+              const newItem = { id: Date.now(), text: newReminderText, createdAt: new Date().toISOString() };
+              setReminders([newItem, ...reminders]); setNewReminderText("");
+          };
+          const completeReminder = (id) => { setReminders(reminders.filter(item => item.id !== id)); };
+
+          const handleActivateLicense = (key) => {
+              localStorage.setItem('app_license_key', key);
+              setIsLicensed(true);
+              setShowLicenseModal(false);
+              alert("Licença ativada com sucesso! Você agora tem acesso ilimitado.");
+          };
+
+          // --- Verificação de Bloqueio ---
+          const checkLimitAndProceed = (actionCallback) => {
+              if (isLicensed) {
+                  actionCallback();
+              } else {
+                  if (records.length >= 1) {
+                      setShowLicenseModal(true);
+                  } else {
+                      actionCallback();
+                  }
+              }
+          };
+
+          const handleExport = () => {
+            const dataStr = JSON.stringify(records, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url; link.download = `backup_ocorridos_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+          };
+          const handleImport = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              try {
+                const importedData = JSON.parse(event.target.result);
+                if (Array.isArray(importedData)) {
+                    // Verifica licença ao importar também
+                    if (!isLicensed && importedData.length > 1) {
+                        alert("Você não pode importar mais de 1 registro na versão gratuita. Ative a licença primeiro.");
+                        setShowLicenseModal(true);
+                        return;
+                    }
+                    if(window.confirm(`Isso substituirá os registros atuais. Deseja continuar?`)) {
+                        setRecords(importedData); alert('Dados importados com sucesso!');
+                    }
+                }
+              } catch (err) { alert('Erro ao ler o arquivo.'); }
+            };
+            reader.readAsText(file);
+          };
+
+          const handleSaveRecord = () => {
+            if (!formData.aluno || !formData.descricao) { alert("Nome do aluno e descrição são obrigatórios."); return; }
+            
+            // Verifica limite antes de salvar um NOVO registro
+            if (!editingId && !isLicensed && records.length >= 1) {
+                setShowLicenseModal(true);
+                return;
+            }
+
+            const tipoFinal = formData.tipoSelecionado === 'Outros' ? formData.tipoOutro : formData.tipoSelecionado;
+            const localFinal = formData.localSelecionado === 'Outro' ? formData.localOutro : formData.localSelecionado;
+            const recordData = { ...formData, tipo: tipoFinal, local: localFinal };
+
+            if (editingId) {
+                setRecords(records.map(r => r.id === editingId ? { ...r, ...recordData } : r));
+                alert("Registro atualizado com sucesso!");
+            } else {
+                setRecords([{ id: Date.now().toString(), createdAt: new Date().toISOString(), ...recordData }, ...records]);
+            }
+            resetForm(); setView('list');
+          };
+
+          const handleEditRecord = (record, e) => {
+            e.stopPropagation(); 
+            const isTipoPadrao = TIPOS_OCORRENCIA.includes(record.tipo);
+            const isLocalPadrao = LOCAIS.includes(record.local);
+            setFormData({
+                ...record,
+                tipoSelecionado: isTipoPadrao ? record.tipo : 'Outros',
+                tipoOutro: isTipoPadrao ? '' : record.tipo,
+                localSelecionado: isLocalPadrao ? record.local : 'Outro',
+                localOutro: isLocalPadrao ? '' : record.local
+            });
+            setEditingId(record.id); setView('create');
+          };
+
+          const resetForm = () => {
+              setFormData({
+                tipoSelecionado: TIPOS_OCORRENCIA[0], tipoOutro: '', modalidade: 'Presencial', regime: 'Bimestre',
+                periodo: '1º Bimestre', data: new Date().toISOString().split('T')[0],
+                hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+                localSelecionado: 'Sala de aula', localOutro: '', aluno: '', nivelEnsino: 'Ensino Fundamental',
+                anoTurma: '', letraTurma: '', turma: '', outrosPresentes: '', descricao: '', providencias: '', assinaturas: []
+              });
+              setEditingId(null); setCustomSignerName(''); setCustomSignerRole('');
+          };
+
+          const initiatePrint = () => { setTempSchoolName(schoolName); setShowPrintModal(true); };
+          const confirmPrint = () => {
+              handleSetSchoolName(tempSchoolName); setShowPrintModal(false);
+              setTimeout(() => { window.print(); }, 300);
+          };
+
+          const openSignaturePad = (name, role) => {
+            if (!name) { alert("Por favor, preencha o nome antes de assinar."); return; }
+            setCurrentSigner({ name, role }); setShowSignaturePad(true);
+          };
+          const handleSignatureSave = (dataUrl) => {
+            const newSignature = { id: Date.now(), nome: currentSigner.name, cargo: currentSigner.role, tipo: 'desenho', imagem: dataUrl, timestamp: new Date().toISOString() };
+            setFormData(prev => ({ ...prev, assinaturas: [...prev.assinaturas, newSignature] }));
+            setShowSignaturePad(false);
+            if (currentSigner.role !== 'Aluno') { setCustomSignerName(''); setCustomSignerRole(''); }
+          };
+          const handlePhotoUpload = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              const newSignature = { id: Date.now(), nome: "Registro Fotográfico", cargo: "Evidência", tipo: 'foto', imagem: reader.result, timestamp: new Date().toISOString() };
+              setFormData(prev => ({ ...prev, assinaturas: [...prev.assinaturas, newSignature] }));
+            };
+            reader.readAsDataURL(file);
+          };
+          const removeSignature = (id) => {
+            if(window.confirm("Remover esta assinatura/foto?")) {
+                setFormData(prev => ({ ...prev, assinaturas: prev.assinaturas.filter(s => s.id !== id) }));
+            }
+          };
+
+          const filteredRecords = records.filter(r => {
+            const matchAluno = filters.aluno ? r.aluno.toLowerCase().includes(filters.aluno.toLowerCase()) : true;
+            // ... (restante dos filtros igual)
+            const matchTipo = filters.tipo ? r.tipo === filters.tipo : true;
+            const matchPeriodo = filters.periodo ? r.periodo === filters.periodo : true;
+            const matchPresentes = filters.presentes ? r.outrosPresentes && r.outrosPresentes.toLowerCase().includes(filters.presentes.toLowerCase()) : true;
+            const matchNivel = filters.nivelEnsino ? r.nivelEnsino === filters.nivelEnsino : true;
+            const matchAno = filters.anoTurma ? r.anoTurma && r.anoTurma.includes(filters.anoTurma) : true;
+            const matchLetra = filters.letraTurma ? r.letraTurma && r.letraTurma === filters.letraTurma : true;
+            const matchModalidade = filters.modalidade ? r.modalidade === filters.modalidade : true;
+            const matchLocal = filters.local ? r.local && r.local.toLowerCase().includes(filters.local.toLowerCase()) : true;
+            const matchConteudo = filters.conteudo ? (r.descricao.toLowerCase().includes(filters.conteudo.toLowerCase()) || (r.providencias && r.providencias.toLowerCase().includes(filters.conteudo.toLowerCase()))) : true;
+            let matchData = true;
+            if (filters.dataInicio || filters.dataFim) {
+                const recordDate = new Date(r.data); recordDate.setHours(0,0,0,0);
+                if (filters.dataInicio) { const d = new Date(filters.dataInicio); d.setHours(0,0,0,0); if (recordDate < d) matchData = false; }
+                if (filters.dataFim) { const d = new Date(filters.dataFim); d.setHours(0,0,0,0); if (recordDate > d) matchData = false; }
+            }
+            return matchAluno && matchNivel && matchAno && matchLetra && matchTipo && matchPeriodo && matchPresentes && matchModalidade && matchLocal && matchConteudo && matchData;
+          });
+          const activeFiltersCount = Object.values(filters).filter(Boolean).length;
+          const clearFilters = () => { setFilters({ aluno: '', nivelEnsino: '', anoTurma: '', letraTurma: '', tipo: '', periodo: '', presentes: '', dataInicio: '', dataFim: '', modalidade: '', local: '', conteudo: '' }); };
+
+          return (
+            <div className="min-h-screen bg-slate-50 font-sans text-slate-800 print:bg-white flex flex-col">
+              <header className="bg-blue-900 text-white p-4 shadow-lg sticky top-0 z-40 print:hidden">
+                <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-2">
+                  <div className="flex items-center gap-3"><BookOpen size={32} className="text-yellow-400" />
+                    <div>
+                        <h1 className="text-xl font-bold tracking-tight">Registro de Ocorridos Escolares</h1>
+                        <p className="text-xs text-blue-200">Aplicativo desenvolvido por Lucas Sebastião Barbosa Silva</p>
+                    </div>
+                  </div>
+                  {/* Status da Licença */}
+                  <div className="flex items-center gap-2">
+                     {!isLicensed ? (
+                        <button onClick={() => setShowLicenseModal(true)} className="flex items-center gap-1 text-[10px] md:text-xs bg-yellow-500 hover:bg-yellow-600 text-black font-bold px-3 py-1 rounded-full animate-pulse transition">
+                             <Lock size={14} /> Versão Gratuita ({records.length}/1) - Ativar
+                        </button>
+                     ) : (
+                        <div className="flex items-center gap-1 text-[10px] md:text-xs bg-green-600 text-white font-bold px-3 py-1 rounded-full opacity-90">
+                             <Unlock size={14} /> Licença Ativa
+                        </div>
+                     )}
+                  </div>
+                </div>
+              </header>
+
+              <main className="max-w-5xl mx-auto p-4 pb-20 print:p-0 print:max-w-none flex-grow w-full">
+                {view === 'list' && (
+                  <div className="print:hidden space-y-6">
+                    <div className="bg-gradient-to-r from-orange-50 to-orange-100 p-4 rounded-lg shadow-sm border border-orange-200">
+                        <div className="flex items-center gap-2 mb-3 text-orange-800"><Bell size={18} className="animate-pulse" /><h3 className="font-bold text-sm uppercase">Lembretes de Registro Pendente</h3></div>
+                        <div className="flex gap-2 mb-3">
+                            <input type="text" placeholder="Ex: Registrar conversa com mãe do Pedro..." className="flex-1 p-2 rounded border border-orange-300 text-sm focus:ring-2 focus:ring-orange-400 outline-none" value={newReminderText} onChange={(e) => setNewReminderText(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && addReminder()} />
+                            <button onClick={addReminder} className="bg-orange-600 text-white px-4 py-2 rounded text-sm font-bold hover:bg-orange-700">Adicionar</button>
+                        </div>
+                        {reminders.length > 0 && <div className="grid gap-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">{reminders.map(rem => (<div key={rem.id} className="bg-white p-3 rounded shadow-sm border border-orange-200 flex justify-between items-center animate-in"><span className="text-sm text-gray-700 font-medium">{rem.text}</span><button onClick={() => completeReminder(rem.id)} className="text-green-600 hover:text-green-800 flex items-center gap-1 text-xs font-bold border border-green-200 bg-green-50 px-2 py-1 rounded hover:bg-green-100"><CheckCircle size={14} /> Já Registrado</button></div>))}</div>}
+                    </div>
+
+                    <div className="bg-white p-4 rounded-lg shadow space-y-4 transition-all">
+                      <div className="flex justify-between items-center cursor-pointer" onClick={() => setShowFilters(!showFilters)}>
+                         <div className="flex items-center gap-2 text-gray-700 font-bold"><Filter size={20} /> Filtros de Pesquisa Avançada {activeFiltersCount > 0 && <span className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">{activeFiltersCount} ativos</span>}</div>
+                         <div className="flex gap-2">{activeFiltersCount > 0 && (<button onClick={(e) => { e.stopPropagation(); clearFilters(); }} className="text-xs text-red-500 hover:underline px-2">Limpar Filtros</button>)}<button className="text-gray-500 hover:text-blue-600">{showFilters ? <ChevronUp size={20} /> : <ChevronDown size={20} />}</button></div>
+                      </div>
+                      <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 border-t pt-4 ${showFilters ? 'block' : 'hidden md:grid'}`}>
+                         <div><label className="text-xs font-semibold text-gray-500 mb-1 block">Nome do Aluno</label><div className="relative"><Search className="absolute left-2 top-2.5 text-gray-400" size={16} /><input type="text" className="w-full pl-8 pr-2 py-2 border rounded bg-gray-50 text-sm" placeholder="Buscar aluno..." value={filters.aluno} onChange={(e) => setFilters({...filters, aluno: e.target.value})} /></div></div>
+                         <div className="grid grid-cols-3 gap-2 col-span-1 md:col-span-2 lg:col-span-1 bg-gray-50 p-2 rounded border"><div className="col-span-3"><label className="text-xs font-bold text-gray-600 mb-1 block flex items-center gap-1"><GraduationCap size={12}/> Filtros da Turma</label></div><div className="col-span-3"><select className="w-full px-2 py-1 border rounded text-xs bg-white" value={filters.nivelEnsino} onChange={(e) => setFilters({...filters, nivelEnsino: e.target.value})}><option value="">Nível (Todos)</option>{NIVEIS_ENSINO.map(n => <option key={n} value={n}>{n}</option>)}</select></div><div><input type="number" className="w-full px-2 py-1 border rounded text-xs" placeholder="Ano" value={filters.anoTurma} onChange={(e) => setFilters({...filters, anoTurma: e.target.value})} /></div><div className="col-span-2"><input type="text" className="w-full px-2 py-1 border rounded text-xs uppercase" placeholder="Letra" maxLength={1} value={filters.letraTurma} onChange={(e) => setFilters({...filters, letraTurma: e.target.value.toUpperCase()})} /></div></div>
+                         <div className="grid grid-cols-2 gap-2"><div><label className="text-xs font-semibold text-gray-500 mb-1 block">De</label><input type="date" className="w-full px-2 py-2 border rounded bg-gray-50 text-sm" value={filters.dataInicio} onChange={(e) => setFilters({...filters, dataInicio: e.target.value})} /></div><div><label className="text-xs font-semibold text-gray-500 mb-1 block">Até</label><input type="date" className="w-full px-2 py-2 border rounded bg-gray-50 text-sm" value={filters.dataFim} onChange={(e) => setFilters({...filters, dataFim: e.target.value})} /></div></div>
+                         <div><label className="text-xs font-semibold text-gray-500 mb-1 block">Conteúdo</label><input type="text" className="w-full px-2 py-2 border rounded bg-gray-50 text-sm" placeholder="Palavras no texto..." value={filters.conteudo} onChange={(e) => setFilters({...filters, conteudo: e.target.value})} /></div>
+                         <div className="grid grid-cols-2 gap-2"><div><label className="text-xs font-semibold text-gray-500 mb-1 block">Modalidade</label><select className="w-full px-2 py-2 border rounded bg-gray-50 text-sm" value={filters.modalidade} onChange={(e) => setFilters({...filters, modalidade: e.target.value})}><option value="">Todas</option><option value="Presencial">Presencial</option><option value="Online">Online</option></select></div><div><label className="text-xs font-semibold text-gray-500 mb-1 block">Local</label><input type="text" className="w-full px-2 py-2 border rounded bg-gray-50 text-sm" placeholder="Buscar local..." value={filters.local} onChange={(e) => setFilters({...filters, local: e.target.value})} /></div></div>
+                         <div><label className="text-xs font-semibold text-gray-500 mb-1 block">Tipo de Registro</label><select className="w-full px-2 py-2 border rounded bg-gray-50 text-sm" value={filters.tipo} onChange={(e) => setFilters({...filters, tipo: e.target.value})}><option value="">Todos</option>{TIPOS_OCORRENCIA.filter(t => t !== 'Outros').map(t => <option key={t} value={t}>{t}</option>)}<option value="Outros">Outros</option></select></div>
+                         <div><label className="text-xs font-semibold text-gray-500 mb-1 block">Período</label><select className="w-full px-2 py-2 border rounded bg-gray-50 text-sm" value={filters.periodo} onChange={(e) => setFilters({...filters, periodo: e.target.value})}><option value="">Todos</option><optgroup label="Bimestres">{BIMESTRES.map(b => <option key={b} value={b}>{b}</option>)}</optgroup><optgroup label="Semestres">{SEMESTRES.map(s => <option key={s} value={s}>{s}</option>)}</optgroup></select></div>
+                         <div className="flex items-end lg:col-span-3">
+                            <button 
+                                onClick={() => checkLimitAndProceed(() => { resetForm(); setView('create'); })} 
+                                className={`w-full text-white py-2 rounded-lg flex items-center justify-center gap-2 font-medium transition shadow-md whitespace-nowrap ${!isLicensed && records.length >= 1 ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+                            >
+                                {(!isLicensed && records.length >= 1) ? <Lock size={20} /> : <Plus size={20} />} 
+                                {(!isLicensed && records.length >= 1) ? 'Limite Atingido (Versão Gratuita)' : 'Novo Registro'}
+                            </button>
+                         </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 overflow-x-auto pb-2"><button onClick={handleExport} className="whitespace-nowrap flex items-center gap-1 text-sm bg-green-100 text-green-800 px-3 py-1 rounded hover:bg-green-200 border border-green-300"><Download size={14} /> Fazer Backup</button><label className="whitespace-nowrap flex items-center gap-1 text-sm bg-orange-100 text-orange-800 px-3 py-1 rounded hover:bg-orange-200 border border-orange-300 cursor-pointer"><Upload size={14} /> Importar Dados<input type="file" accept=".json" className="hidden" onChange={handleImport} /></label></div>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {filteredRecords.map(record => (
+                        <div key={record.id} onClick={() => { setSelectedRecord(record); setView('details'); }} className="bg-white p-5 rounded-lg shadow hover:shadow-lg transition cursor-pointer border-l-4 border-l-blue-500 group relative overflow-hidden">
+                           <button onClick={(e) => handleEditRecord(record, e)} className="absolute top-2 right-2 p-2 bg-white rounded-full shadow opacity-0 group-hover:opacity-100 transition text-gray-500 hover:text-blue-600 z-20" title="Editar registro"><Edit size={16} /></button>
+                           <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition pointer-events-none"><FileText size={64} /></div>
+                          <div className="flex justify-between items-start mb-2 relative z-10 pr-8"><span className={`text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider ${record.modalidade === 'Online' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>{record.modalidade || 'Presencial'}</span><span className="text-gray-400 text-xs">{new Date(record.createdAt).toLocaleDateString()}</span></div>
+                          <h3 className="font-bold text-lg mb-1 group-hover:text-blue-600 truncate relative z-10">{record.aluno}</h3>
+                          <div className="flex gap-2 mb-2 flex-wrap"><span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded border border-yellow-200 font-bold">{formatTurma(record)}</span><span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded border">{record.periodo || '1º Bimestre'}</span><span className="text-xs font-medium uppercase text-gray-500 truncate max-w-[150px]">{record.tipo}</span></div>
+                          <p className="text-sm text-gray-600 mb-3 line-clamp-2 relative z-10">{record.descricao}</p>
+                          <div className="flex items-center gap-4 text-xs text-gray-500 border-t pt-3 relative z-10"><div className="flex items-center gap-1"><Users size={14} /> {record.assinaturas.length}</div><div className="flex items-center gap-1"><Calendar size={14} /> {formatDateTime(record.data + 'T' + record.hora)}</div></div>
+                        </div>
+                      ))}
+                      {filteredRecords.length === 0 && <div className="col-span-full text-center py-10 text-gray-500"><p className="text-lg font-medium">Nenhum registro encontrado.</p></div>}
+                    </div>
+                  </div>
+                )}
+
+                {view === 'create' && (
+                  <div className="bg-white rounded-lg shadow-lg overflow-hidden print:hidden">
+                    <div className="bg-gray-50 p-4 border-b flex justify-between items-center sticky top-0 z-30"><h2 className="text-lg font-bold flex items-center gap-2">{editingId ? <Edit size={20} /> : <FileText size={20} />} {editingId ? 'Editar Ocorrido' : 'Novo Ocorrido'}</h2><button onClick={() => { setView('list'); resetForm(); }} className="text-gray-500 hover:text-gray-700">Cancelar</button></div>
+                    <div className="p-6 space-y-6">
+                      {/* ... Campos de formulário mantidos exatamente iguais ... */}
+                      <div className="grid md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-100">
+                        <div className="md:col-span-2 grid md:grid-cols-2 gap-4">
+                            <div><label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Registro</label><select className="w-full p-2 border rounded bg-white mb-2" value={formData.tipoSelecionado} onChange={e => setFormData({...formData, tipoSelecionado: e.target.value})}>{TIPOS_OCORRENCIA.map(t => <option key={t} value={t}>{t}</option>)}</select>{formData.tipoSelecionado === 'Outros' && (<input type="text" className="w-full p-2 border border-blue-300 rounded bg-white animate-in" placeholder="Especifique o tipo" value={formData.tipoOutro} onChange={e => setFormData({...formData, tipoOutro: e.target.value})} autoFocus />)}</div>
+                            <div><label className="block text-sm font-medium text-gray-700 mb-1">Modalidade</label><div className="flex gap-4 mt-2"><label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="modalidade" value="Presencial" checked={formData.modalidade === 'Presencial'} onChange={e => setFormData({...formData, modalidade: e.target.value})} className="w-4 h-4 text-blue-600" /><span className="flex items-center gap-1"><MapPin size={16} /> Presencial</span></label><label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="modalidade" value="Online" checked={formData.modalidade === 'Online'} onChange={e => setFormData({...formData, modalidade: e.target.value})} className="w-4 h-4 text-purple-600" /><span className="flex items-center gap-1"><Monitor size={16} /> Online</span></label></div></div>
+                        </div>
+                        <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-4 gap-4 pt-2 border-t border-gray-200">
+                            <div><label className="block text-sm font-medium text-gray-700 mb-1">Regime</label><div className="flex items-center gap-2 mb-2 bg-white rounded p-1 border"><button onClick={() => setFormData({...formData, regime: 'Bimestre', periodo: BIMESTRES[0]})} className={`flex-1 text-xs py-1 rounded ${formData.regime === 'Bimestre' ? 'bg-blue-100 text-blue-700 font-bold' : 'text-gray-500'}`}>Bimestre</button><button onClick={() => setFormData({...formData, regime: 'Semestre', periodo: SEMESTRES[0]})} className={`flex-1 text-xs py-1 rounded ${formData.regime === 'Semestre' ? 'bg-blue-100 text-blue-700 font-bold' : 'text-gray-500'}`}>Semestre</button></div><select className="w-full p-2 border rounded bg-white" value={formData.periodo} onChange={e => setFormData({...formData, periodo: e.target.value})}><option value="">-- Não se aplica --</option>{(formData.regime === 'Bimestre' ? BIMESTRES : SEMESTRES).map(b => <option key={b} value={b}>{b}</option>)}</select></div>
+                            <div><label className="block text-sm font-medium text-gray-700 mb-1">Data</label><input type="date" className="w-full p-2 border rounded" value={formData.data} onChange={e => setFormData({...formData, data: e.target.value})} /></div>
+                            <div><label className="block text-sm font-medium text-gray-700 mb-1">Horário</label><input type="time" className="w-full p-2 border rounded" value={formData.hora} onChange={e => setFormData({...formData, hora: e.target.value})} /></div>
+                            <div><label className="block text-sm font-medium text-gray-700 mb-1">Local</label><select className="w-full p-2 border rounded bg-white" value={formData.localSelecionado} onChange={e => setFormData({...formData, localSelecionado: e.target.value})}>{LOCAIS.map(l => <option key={l} value={l}>{l}</option>)}</select>{formData.localSelecionado === 'Outro' && (<input type="text" className="w-full p-2 mt-2 border border-blue-300 rounded bg-white animate-in" value={formData.localOutro} onChange={e => setFormData({...formData, localOutro: e.target.value})} placeholder="Especifique o local..." autoFocus />)}</div>
+                        </div>
+                      </div>
+
+                      <div className="border-t pt-4"><h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2"><User size={18} /> Participantes</h3>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div><label className="block text-sm font-medium text-gray-700 mb-1">Nome do Aluno *</label><input type="text" className="w-full p-2 border rounded border-blue-200" placeholder="Nome completo" value={formData.aluno} onChange={e => setFormData({...formData, aluno: e.target.value})} /></div>
+                          <div className="bg-blue-50 p-2 rounded border border-blue-100"><label className="block text-xs font-bold text-blue-800 mb-2 flex items-center gap-1"><GraduationCap size={14}/> Detalhes da Turma</label><div className="grid grid-cols-2 gap-2 mb-2"><select className="col-span-2 w-full p-2 border rounded text-sm bg-white" value={formData.nivelEnsino} onChange={e => setFormData({...formData, nivelEnsino: e.target.value})}>{NIVEIS_ENSINO.map(n => <option key={n} value={n}>{n}</option>)}</select><input type="number" className="w-full p-2 border rounded text-sm" placeholder="Ano (Nº)" value={formData.anoTurma} onChange={e => setFormData({...formData, anoTurma: e.target.value})} /><input type="text" className="w-full p-2 border rounded text-sm uppercase" placeholder="Letra" maxLength={1} value={formData.letraTurma} onChange={e => setFormData({...formData, letraTurma: e.target.value.toUpperCase()})} /></div></div>
+                          <div className="md:col-span-2"><label className="block text-sm font-medium text-gray-700 mb-1">Outros Presentes</label><input type="text" className="w-full p-2 border rounded" placeholder="Professores, Coordenadores..." value={formData.outrosPresentes} onChange={e => setFormData({...formData, outrosPresentes: e.target.value})} /></div>
+                        </div>
+                      </div>
+
+                      <div className="border-t pt-4"><h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2"><FileText size={18} /> Detalhes</h3>
+                        <div className="space-y-4">
+                          <div><label className="block text-sm font-medium text-gray-700 mb-1">Descrição do Ocorrido *</label><textarea className="w-full p-3 border rounded h-32 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Descreva detalhadamente..." value={formData.descricao} onChange={e => setFormData({...formData, descricao: e.target.value})}></textarea></div>
+                          <div><label className="block text-sm font-medium text-gray-700 mb-1">Providências</label><textarea className="w-full p-3 border rounded h-24 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Encaminhamentos..." value={formData.providencias} onChange={e => setFormData({...formData, providencias: e.target.value})}></textarea></div>
+                        </div>
+                      </div>
+
+                      <div className="border-t pt-4 bg-blue-50 -mx-6 px-6 pb-6"><h3 className="font-semibold text-gray-800 mb-3 mt-4 flex items-center gap-2"><PenTool size={18} /> Assinaturas</h3>
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <div className="space-y-3"><p className="text-xs font-bold text-gray-500 uppercase">Assinatura do Aluno</p><button onClick={() => openSignaturePad(formData.aluno || 'Aluno', 'Aluno')} className="w-full bg-white border border-blue-300 text-blue-700 px-4 py-3 rounded-lg shadow-sm hover:bg-blue-50 text-sm flex items-center justify-center gap-2 font-medium"><PenTool size={16} /> Assinar como Aluno</button>
+                                <div className="mt-4"><p className="text-xs font-bold text-gray-500 uppercase mb-2">Registro por imagem</p><div className="grid grid-cols-2 gap-2"><label className="w-full bg-white border border-gray-300 text-gray-700 px-2 py-3 rounded-lg shadow-sm hover:bg-gray-50 text-sm flex flex-col items-center justify-center gap-1 font-medium cursor-pointer text-center"><Camera size={20} /> <span>Câmera</span><input type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhotoUpload} /></label><label className="w-full bg-white border border-gray-300 text-gray-700 px-2 py-3 rounded-lg shadow-sm hover:bg-gray-50 text-sm flex flex-col items-center justify-center gap-1 font-medium cursor-pointer text-center"><ImageIcon size={20} /> <span>Galeria</span><input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} /></label></div></div>
+                            </div>
+                            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm"><p className="text-xs font-bold text-gray-500 uppercase mb-2">Outros Participantes</p><div className="space-y-2"><input type="text" placeholder="Nome" className="w-full p-2 border rounded text-sm" value={customSignerName} onChange={e => setCustomSignerName(e.target.value)} /><input type="text" placeholder="Cargo/Função" className="w-full p-2 border rounded text-sm" value={customSignerRole} onChange={e => setCustomSignerRole(e.target.value)} /><button onClick={() => openSignaturePad(customSignerName, customSignerRole)} disabled={!customSignerName || !customSignerRole} className="w-full bg-gray-800 text-white px-4 py-2 rounded disabled:opacity-50 hover:bg-gray-900 text-sm flex items-center justify-center gap-2"><PenTool size={14} /> Coletar Assinatura</button></div></div>
+                        </div>
+                        {formData.assinaturas.length > 0 && (<div className="mt-6"><p className="text-xs font-bold text-gray-500 uppercase mb-2">Itens Coletados ({formData.assinaturas.length})</p><div className="grid grid-cols-2 md:grid-cols-4 gap-4">{formData.assinaturas.map((sig) => (<div key={sig.id} className="bg-white p-2 rounded shadow border relative group"><button onClick={() => removeSignature(sig.id)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow hover:bg-red-600 z-10"><X size={12} /></button><div className="h-24 bg-gray-50 flex items-center justify-center mb-2 overflow-hidden rounded relative"><img src={sig.imagem} alt="Assinatura" className="max-h-full max-w-full object-contain" />{sig.tipo === 'foto' && (<div className="absolute bottom-0 w-full bg-black bg-opacity-60 text-white text-[9px] text-center py-0.5">{formatDateTime(formData.data + 'T' + formData.hora)}</div>)}</div><div className="text-xs font-bold truncate">{sig.nome}</div><div className="text-xs text-gray-500 truncate">{sig.cargo}</div></div>))}</div></div>)}
+                      </div>
+
+                      <div className="flex justify-end gap-3 pt-4"><button onClick={() => { setView('list'); resetForm(); }} className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50">Cancelar</button><button onClick={handleSaveRecord} className={`px-6 py-3 text-white rounded-lg font-bold shadow-lg flex items-center gap-2 ${editingId ? 'bg-orange-600 hover:bg-orange-700' : 'bg-blue-700 hover:bg-blue-800'}`}>{editingId ? <Edit size={20} /> : <Save size={20} />} {editingId ? 'Atualizar' : 'Salvar'}</button></div>
+                    </div>
+                  </div>
+                )}
+
+                {view === 'details' && selectedRecord && (
+                  <div className="bg-white rounded-lg shadow-xl print:shadow-none print:w-full max-w-4xl mx-auto">
+                    <div className="bg-gray-50 p-6 border-b print:bg-white print:border-b-2 print:p-0 print:mb-4">
+                      {schoolName && (<div className="hidden print:block text-center mb-4 border-b-2 pb-2"><h1 className="text-xl font-bold uppercase tracking-wide">{schoolName}</h1></div>)}
+                      <div className="flex justify-between items-start"><div><h2 className="text-2xl font-bold text-gray-800 mb-1 print:text-xl">Registro de Ocorrido Escolar</h2><p className="text-sm text-gray-500 print:text-gray-700">ID: #{selectedRecord.id.slice(-6)} • Gerado em {new Date().toLocaleDateString()}</p></div><div className="flex gap-2"><button onClick={(e) => handleEditRecord(selectedRecord, e)} className="text-gray-500 hover:text-blue-600 print:hidden bg-gray-200 p-2 rounded-full flex items-center gap-2 px-3"><Edit size={16} /> <span className="text-xs font-bold">Editar</span></button><button onClick={() => setView('list')} className="text-gray-500 hover:text-blue-600 print:hidden bg-gray-200 p-2 rounded-full"><X size={20} /></button></div></div>
+                    </div>
+                    <div className="p-8 space-y-6 print:p-0 print:space-y-4 text-sm print:text-base">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-blue-50 p-4 rounded-lg print:bg-transparent print:border print:border-gray-300 print:p-2">
+                        <div><label className="block text-xs font-bold text-gray-500 uppercase">Data do Fato</label><div className="text-gray-900 font-medium">{formatDateTime(selectedRecord.data + 'T' + selectedRecord.hora).split(' ')[0]}</div></div>
+                        <div><label className="block text-xs font-bold text-gray-500 uppercase">Período</label><div className="text-gray-900 font-medium">{selectedRecord.periodo || 'N/A'}</div></div>
+                        <div><label className="block text-xs font-bold text-gray-500 uppercase">Modalidade</label><div className="text-gray-900 font-medium">{selectedRecord.modalidade || 'Presencial'}</div></div>
+                        <div><label className="block text-xs font-bold text-gray-500 uppercase">Tipo</label><div className="text-blue-800 font-bold uppercase text-xs print:text-black">{selectedRecord.tipo}</div></div>
+                      </div>
+                      <div className="border border-gray-200 rounded p-4 print:border-gray-300 print:p-2"><h3 className="text-base font-bold border-b pb-2 mb-3 text-gray-800 uppercase print:text-sm">Participantes</h3><div className="grid grid-cols-1 gap-2"><p><span className="font-bold w-24 inline-block">Aluno:</span> {selectedRecord.aluno} {formatTurma(selectedRecord)}</p><p><span className="font-bold w-24 inline-block">Local:</span> {selectedRecord.local}</p><p><span className="font-bold w-24 inline-block">Presentes:</span> {selectedRecord.outrosPresentes || 'Apenas os assinantes.'}</p></div></div>
+                      <div><h3 className="text-base font-bold border-b border-gray-300 pb-1 mb-2 text-gray-800 uppercase print:text-sm">Descrição do Ocorrido</h3><div className="whitespace-pre-wrap text-gray-800 leading-relaxed text-justify min-h-[100px] border border-transparent print:border-none">{selectedRecord.descricao}</div></div>
+                      <div><h3 className="text-base font-bold border-b border-gray-300 pb-1 mb-2 text-gray-800 uppercase print:text-sm">Providências / Encaminhamentos</h3><div className="whitespace-pre-wrap text-gray-800 leading-relaxed text-justify min-h-[60px] border border-transparent print:border-none">{selectedRecord.providencias || 'Nenhuma providência registrada.'}</div></div>
+                      <div className="pt-4 break-inside-avoid"><h3 className="text-base font-bold border-b border-gray-800 pb-1 mb-6 text-gray-800 uppercase print:text-sm">Assinaturas e Comprovações</h3>
+                        {selectedRecord.assinaturas.length === 0 ? (<p className="text-gray-400 italic text-center py-4">Nenhuma assinatura digital coletada.</p>) : (<div className="grid grid-cols-2 md:grid-cols-3 gap-y-8 gap-x-4">{selectedRecord.assinaturas.map(sig => (<div key={sig.id} className="flex flex-col items-center break-inside-avoid"><div className="h-28 w-full border-b border-gray-800 mb-1 flex items-end justify-center pb-1 relative"><img src={sig.imagem} className="max-h-24 max-w-full object-contain" alt={`Assinatura`} /></div><p className="font-bold text-sm text-center leading-tight">{sig.nome}</p><p className="text-xs text-gray-600 uppercase mb-1">{sig.cargo}</p><p className="text-[9px] text-gray-400">{sig.tipo === 'foto' ? 'Registro Fotográfico em ' : 'Assinado em '}{new Date(sig.timestamp).toLocaleDateString()} às {new Date(sig.timestamp).toLocaleTimeString()}</p>{sig.tipo === 'foto' && (<div className="mt-1 text-[10px] bg-gray-100 px-2 py-0.5 rounded border print:border-gray-300">Ref. Data Ocorrido: {formatDateTime(selectedRecord.data + 'T' + selectedRecord.hora)}</div>)}</div>))}</div>)}
+                      </div>
+                      <div className="hidden print:block fixed bottom-0 left-0 w-full text-center text-[10px] text-gray-400 border-t pt-2 mt-4">Documento gerado digitalmente pelo App Registro de Ocorridos (Prof. Lucas Sebastião Barbosa Silva). Válido como registro escolar.<br /> Proteção de Dados: Conformidade com Lei nº 13.709/2018 (LGPD).</div>
+                      <div className="pt-8 border-t mt-8 print:hidden flex justify-between items-center bg-gray-50 -mx-8 px-8 pb-4 rounded-b-lg"><div className="text-xs text-gray-400">App desenvolvido por Prof. Lucas Sebastião</div><button onClick={initiatePrint} className="flex items-center gap-2 bg-gray-800 text-white px-6 py-3 rounded-lg shadow hover:bg-black transition font-bold"><Printer size={20} /> Imprimir PDF (A4)</button></div>
+                    </div>
+                  </div>
+                )}
+              </main>
+
+              <footer className="bg-slate-100 border-t p-6 text-center text-[10px] text-gray-500 print:hidden mt-auto space-y-4">
+                <div className="max-w-3xl mx-auto flex flex-col items-center gap-1 border-b border-gray-200 pb-4">
+                    <ShieldCheck size={16} className="text-gray-400 mb-1" />
+                    <p><strong>Proteção de Dados:</strong> Em conformidade com a <strong>Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018)</strong>.</p>
+                </div>
+                
+                <div className="max-w-4xl mx-auto text-gray-400 leading-relaxed text-[9px]">
+                    <p className="font-bold mb-1">AVISO LEGAL DE DIREITOS AUTORAIS</p>
+                    <p className="mb-2">© 2025 Maria Jaqueline da Silva Pereira - CNPJ: 62.323.279/0001-00. Todos os direitos reservados.</p>
+                    <p>
+                        Este software é protegido pelas leis de propriedade intelectual e direitos autorais internacionais.
+                        É estritamente proibida a cópia, reprodução, redistribuição, engenharia reversa, descompilação ou modificação do código-fonte deste aplicativo, 
+                        total ou parcialmente, sem autorização prévia e expressa do detentor dos direitos. A violação destes termos sujeitará o infrator às sanções civis 
+                        e criminais previstas na Lei nº 9.610/98 (Lei de Direitos Autorais) e Lei nº 9.609/98 (Lei de Software).
+                    </p>
+                </div>
+              </footer>
+
+              {showPrintModal && (<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 print:hidden animate-in"><div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6"><div className="flex justify-between items-center mb-4"><h3 className="text-lg font-bold text-gray-800 flex items-center gap-2"><Printer className="text-blue-600" /> Preparar Impressão</h3><button onClick={() => setShowPrintModal(false)} className="text-gray-400 hover:text-red-500"><X size={20} /></button></div><div className="mb-4"><label className="block text-sm font-medium text-gray-700 mb-2">Nome da Escola</label><div className="relative"><School className="absolute left-3 top-3 text-gray-400" size={18} /><input type="text" className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: Escola Municipal Joaquim Távora" value={tempSchoolName} onChange={(e) => setTempSchoolName(e.target.value)} autoFocus /></div></div><div className="flex justify-end gap-3 pt-2 border-t mt-4"><button onClick={() => setShowPrintModal(false)} className="px-4 py-2 border rounded text-gray-600 hover:bg-gray-50 font-medium">Cancelar</button><button onClick={confirmPrint} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-bold shadow flex items-center gap-2"><Printer size={16} /> Confirmar e Imprimir</button></div></div></div>)}
+              {showSignaturePad && (<SignaturePad label={`${currentSigner.role} - ${currentSigner.name}`} onSave={handleSignatureSave} onCancel={() => setShowSignaturePad(false)} />)}
+              {/* MODAL DE LICENÇA */}
+              {showLicenseModal && (<LicenseModal deviceId={deviceId} onClose={() => setShowLicenseModal(false)} onActivate={handleActivateLicense} />)}
+              
+              <footer className="md:hidden fixed bottom-0 w-full bg-white border-t p-2 flex justify-around text-xs text-gray-600 z-30 print:hidden"><button onClick={() => { setView('list'); resetForm(); }} className={`flex flex-col items-center p-2 ${view === 'list' ? 'text-blue-600' : ''}`}><BookOpen size={20} /> Início</button><button onClick={() => checkLimitAndProceed(() => { setView('create'); resetForm(); })} className={`flex flex-col items-center p-2 ${view === 'create' && !editingId ? 'text-blue-600' : ''}`}><Plus size={20} /> Novo</button></footer>
+            </div>
+          );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+        
+        // --- REGISTRO DO SERVICE WORKER (PWA) ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                .then(registration => {
+                    console.log('SW registrado com sucesso:', registration.scope);
+                })
+                .catch(error => {
+                    console.log('Falha ao registrar SW:', error);
+                });
+            });
+        }
+    </script>
+</body>
+</html>
