@@ -1,6 +1,6 @@
 {
   "name": "Registro de Ocorridos Escolar",
-  "short_name": "Ocorridos",
+  "short_name": "SchoolConduct",
   "id": "registro-ocorridos-v1",
   "start_url": "./index.html",
   "display": "standalone",
@@ -40,3 +40,4 @@
     }
   ]
 }
+
