@@ -27,10 +27,40 @@
     <style>
         /* Ajustes para impressão */
         @media print {
-            @page { margin: 1cm; size: A4; }
-            body { -webkit-print-color-adjust: exact; }
+            @page { margin: 0.5cm; size: A4; }
+            body { 
+                -webkit-print-color-adjust: exact; 
+                font-size: 11px;
+            }
             .no-print { display: none !important; }
             .break-inside-avoid { page-break-inside: avoid; }
+
+            /* Utilitários Específicos de Impressão para Compactação */
+            .print\:text-xs { font-size: 10px !important; }
+            .print\:text-xxs { font-size: 9px !important; }
+            .print\:p-0 { padding: 0 !important; }
+            .print\:p-1 { padding: 4px !important; }
+            .print\:m-0 { margin: 0 !important; }
+            .print\:mb-1 { margin-bottom: 4px !important; }
+            .print\:mb-2 { margin-bottom: 8px !important; }
+            .print\:mt-2 { margin-top: 8px !important; }
+            .print\:gap-1 { gap: 4px !important; }
+            .print\:gap-2 { gap: 8px !important; }
+            .print\:h-16 { height: 50px !important; }
+            .print\:h-20 { height: 70px !important; }
+            .print\:min-h-0 { min-height: 0 !important; }
+            .print\:leading-tight { line-height: 1.2 !important; }
+            .print\:shadow-none { box-shadow: none !important; }
+            .print\:bg-transparent { background: transparent !important; }
+            .print\:border-gray-300 { border-color: #d1d5db !important; }
+            
+            /* Esconder elementos desnecessários na impressão */
+            .print\:hidden { display: none !important; }
+            .print\:block { display: block !important; }
+            .print\:flex { display: flex !important; }
+            
+            /* Forçar larguras */
+            .print\:w-full { width: 100% !important; }
         }
         
         /* Melhoria para toque em mobile */
@@ -727,35 +757,35 @@
                 )}
 
                 {view === 'details' && selectedRecord && (
-                  <div className="bg-white rounded-lg shadow-xl print:shadow-none print:w-full max-w-4xl mx-auto">
-                    <div className="bg-gray-50 p-6 border-b print:bg-white print:border-b-2 print:p-0 print:mb-4">
+                  <div className="bg-white rounded-lg shadow-xl print:shadow-none print:w-full max-w-4xl mx-auto print:m-0">
+                    <div className="bg-gray-50 p-6 border-b print:bg-white print:border-b-0 print:p-0 print:mb-2">
                       {/* Cabeçalho de Impressão Atualizado com Logo */}
-                      <div className="hidden print:flex flex-col items-center mb-6 border-b-2 border-gray-800 pb-4">
+                      <div className="hidden print:flex flex-col items-center mb-6 print:mb-2 border-b-2 border-gray-800 pb-4 print:pb-2">
                         {schoolLogo && (
-                            <img src={schoolLogo} alt="Logo da Escola" className="h-24 w-auto object-contain mb-2" />
+                            <img src={schoolLogo} alt="Logo da Escola" className="h-24 print:h-16 w-auto object-contain mb-2 print:mb-1" />
                         )}
                         {schoolName && (
-                             <h1 className="text-2xl font-bold uppercase tracking-wide text-center">{schoolName}</h1>
+                             <h1 className="text-2xl print:text-lg font-bold uppercase tracking-wide text-center">{schoolName}</h1>
                         )}
-                        <div className="text-xs text-gray-500 mt-1 uppercase tracking-widest">Relatório de Ocorrência Escolar</div>
+                        <div className="text-xs text-gray-500 mt-1 uppercase tracking-widest print:text-[10px]">Relatório de Ocorrência Escolar</div>
                       </div>
                       
-                      <div className="flex justify-between items-start"><div><h2 className="text-2xl font-bold text-gray-800 mb-1 print:text-xl print:hidden">Registro de Ocorrido Escolar</h2><p className="text-sm text-gray-500 print:text-gray-700">ID: #{selectedRecord.id.slice(-6)} • Gerado em {new Date().toLocaleDateString()}</p></div><div className="flex gap-2"><button onClick={(e) => handleEditRecord(selectedRecord, e)} className="text-gray-500 hover:text-blue-600 print:hidden bg-gray-200 p-2 rounded-full flex items-center gap-2 px-3"><Edit size={16} /> <span className="text-xs font-bold">Editar</span></button><button onClick={() => setView('list')} className="text-gray-500 hover:text-blue-600 print:hidden bg-gray-200 p-2 rounded-full"><X size={20} /></button></div></div>
+                      <div className="flex justify-between items-start"><div><h2 className="text-2xl font-bold text-gray-800 mb-1 print:text-xl print:hidden">Registro de Ocorrido Escolar</h2><p className="text-sm text-gray-500 print:text-gray-700 print:text-xs">ID: #{selectedRecord.id.slice(-6)} • Gerado em {new Date().toLocaleDateString()}</p></div><div className="flex gap-2"><button onClick={(e) => handleEditRecord(selectedRecord, e)} className="text-gray-500 hover:text-blue-600 print:hidden bg-gray-200 p-2 rounded-full flex items-center gap-2 px-3"><Edit size={16} /> <span className="text-xs font-bold">Editar</span></button><button onClick={() => setView('list')} className="text-gray-500 hover:text-blue-600 print:hidden bg-gray-200 p-2 rounded-full"><X size={20} /></button></div></div>
                     </div>
-                    <div className="p-8 space-y-6 print:p-0 print:space-y-4 text-sm print:text-base">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-blue-50 p-4 rounded-lg print:bg-transparent print:border print:border-gray-300 print:p-2">
-                        <div><label className="block text-xs font-bold text-gray-500 uppercase">Data do Fato</label><div className="text-gray-900 font-medium">{formatDateTime(selectedRecord.data + 'T' + selectedRecord.hora).split(' ')[0]}</div></div>
-                        <div><label className="block text-xs font-bold text-gray-500 uppercase">Período</label><div className="text-gray-900 font-medium">{selectedRecord.periodo || 'N/A'}</div></div>
-                        <div><label className="block text-xs font-bold text-gray-500 uppercase">Modalidade</label><div className="text-gray-900 font-medium">{selectedRecord.modalidade || 'Presencial'}</div></div>
-                        <div><label className="block text-xs font-bold text-gray-500 uppercase">Tipo</label><div className="text-blue-800 font-bold uppercase text-xs print:text-black">{selectedRecord.tipo}</div></div>
+                    <div className="p-8 space-y-6 print:p-0 print:space-y-2 text-sm print:text-xs">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-blue-50 p-4 rounded-lg print:bg-transparent print:border print:border-gray-300 print:p-1 print:gap-2">
+                        <div><label className="block text-xs font-bold text-gray-500 uppercase print:text-[10px]">Data do Fato</label><div className="text-gray-900 font-medium">{formatDateTime(selectedRecord.data + 'T' + selectedRecord.hora).split(' ')[0]}</div></div>
+                        <div><label className="block text-xs font-bold text-gray-500 uppercase print:text-[10px]">Período</label><div className="text-gray-900 font-medium">{selectedRecord.periodo || 'N/A'}</div></div>
+                        <div><label className="block text-xs font-bold text-gray-500 uppercase print:text-[10px]">Modalidade</label><div className="text-gray-900 font-medium">{selectedRecord.modalidade || 'Presencial'}</div></div>
+                        <div><label className="block text-xs font-bold text-gray-500 uppercase print:text-[10px]">Tipo</label><div className="text-blue-800 font-bold uppercase text-xs print:text-black">{selectedRecord.tipo}</div></div>
                       </div>
-                      <div className="border border-gray-200 rounded p-4 print:border-gray-300 print:p-2"><h3 className="text-base font-bold border-b pb-2 mb-3 text-gray-800 uppercase print:text-sm">Participantes</h3><div className="grid grid-cols-1 gap-2"><p><span className="font-bold w-24 inline-block">Aluno:</span> {selectedRecord.aluno} {formatTurma(selectedRecord)}</p><p><span className="font-bold w-24 inline-block">Local:</span> {selectedRecord.local}</p><p><span className="font-bold w-24 inline-block">Presentes:</span> {selectedRecord.outrosPresentes || 'Apenas os assinantes.'}</p></div></div>
-                      <div><h3 className="text-base font-bold border-b border-gray-300 pb-1 mb-2 text-gray-800 uppercase print:text-sm">Descrição do Ocorrido</h3><div className="whitespace-pre-wrap text-gray-800 leading-relaxed text-justify min-h-[100px] border border-transparent print:border-none">{selectedRecord.descricao}</div></div>
-                      <div><h3 className="text-base font-bold border-b border-gray-300 pb-1 mb-2 text-gray-800 uppercase print:text-sm">Providências / Encaminhamentos</h3><div className="whitespace-pre-wrap text-gray-800 leading-relaxed text-justify min-h-[60px] border border-transparent print:border-none">{selectedRecord.providencias || 'Nenhuma providência registrada.'}</div></div>
-                      <div className="pt-4 break-inside-avoid"><h3 className="text-base font-bold border-b border-gray-800 pb-1 mb-6 text-gray-800 uppercase print:text-sm">Assinaturas e Comprovações</h3>
-                        {selectedRecord.assinaturas.length === 0 ? (<p className="text-gray-400 italic text-center py-4">Nenhuma assinatura digital coletada.</p>) : (<div className="grid grid-cols-2 md:grid-cols-3 gap-y-8 gap-x-4">{selectedRecord.assinaturas.map(sig => (<div key={sig.id} className="flex flex-col items-center break-inside-avoid"><div className="h-28 w-full border-b border-gray-800 mb-1 flex items-end justify-center pb-1 relative"><img src={sig.imagem} className="max-h-24 max-w-full object-contain" alt={`Assinatura`} /></div><p className="font-bold text-sm text-center leading-tight">{sig.nome}</p><p className="text-xs text-gray-600 uppercase mb-1">{sig.cargo}</p><p className="text-[9px] text-gray-400">{sig.tipo === 'foto' ? 'Registro Fotográfico em ' : 'Assinado em '}{new Date(sig.timestamp).toLocaleDateString()} às {new Date(sig.timestamp).toLocaleTimeString()}</p>{sig.tipo === 'foto' && (<div className="mt-1 text-[10px] bg-gray-100 px-2 py-0.5 rounded border print:border-gray-300">Ref. Data Ocorrido: {formatDateTime(selectedRecord.data + 'T' + selectedRecord.hora)}</div>)}</div>))}</div>)}
+                      <div className="border border-gray-200 rounded p-4 print:border-gray-300 print:p-2 print:mb-1"><h3 className="text-base font-bold border-b pb-2 mb-3 print:mb-1 text-gray-800 uppercase print:text-xs print:pb-1">Participantes</h3><div className="grid grid-cols-1 gap-2 print:gap-0.5"><p><span className="font-bold w-24 inline-block print:w-16">Aluno:</span> {selectedRecord.aluno} {formatTurma(selectedRecord)}</p><p><span className="font-bold w-24 inline-block print:w-16">Local:</span> {selectedRecord.local}</p><p><span className="font-bold w-24 inline-block print:w-16">Presentes:</span> {selectedRecord.outrosPresentes || 'Apenas os assinantes.'}</p></div></div>
+                      <div><h3 className="text-base font-bold border-b border-gray-300 pb-1 mb-2 text-gray-800 uppercase print:text-xs print:mb-1">Descrição do Ocorrido</h3><div className="whitespace-pre-wrap text-gray-800 leading-relaxed text-justify min-h-[100px] print:min-h-0 border border-transparent print:border-none print:text-justify">{selectedRecord.descricao}</div></div>
+                      {selectedRecord.providencias && (<div><h3 className="text-base font-bold border-b border-gray-300 pb-1 mb-2 text-gray-800 uppercase print:text-xs print:mb-1">Providências / Encaminhamentos</h3><div className="whitespace-pre-wrap text-gray-800 leading-relaxed text-justify min-h-[60px] print:min-h-0 border border-transparent print:border-none print:text-justify">{selectedRecord.providencias}</div></div>)}
+                      <div className="pt-4 break-inside-avoid print:pt-2"><h3 className="text-base font-bold border-b border-gray-800 pb-1 mb-6 text-gray-800 uppercase print:text-xs print:mb-2 print:pb-1">Assinaturas e Comprovações</h3>
+                        {selectedRecord.assinaturas.length === 0 ? (<p className="text-gray-400 italic text-center py-4 print:py-2">Nenhuma assinatura digital coletada.</p>) : (<div className="grid grid-cols-2 md:grid-cols-3 gap-y-8 gap-x-4 print:gap-y-4 print:gap-x-2">{selectedRecord.assinaturas.map(sig => (<div key={sig.id} className="flex flex-col items-center break-inside-avoid"><div className="h-28 w-full border-b border-gray-800 mb-1 flex items-end justify-center pb-1 relative print:h-16"><img src={sig.imagem} className="max-h-24 max-w-full object-contain print:max-h-14" alt={`Assinatura`} /></div><p className="font-bold text-sm text-center leading-tight print:text-xs">{sig.nome}</p><p className="text-xs text-gray-600 uppercase mb-1 print:text-[10px]">{sig.cargo}</p><p className="text-[9px] text-gray-400 print:text-[8px]">{sig.tipo === 'foto' ? 'Registro Fotográfico em ' : 'Assinado em '}{new Date(sig.timestamp).toLocaleDateString()} às {new Date(sig.timestamp).toLocaleTimeString()}</p>{sig.tipo === 'foto' && (<div className="mt-1 text-[10px] bg-gray-100 px-2 py-0.5 rounded border print:border-gray-300 print:text-[8px]">Ref. Data Ocorrido: {formatDateTime(selectedRecord.data + 'T' + selectedRecord.hora)}</div>)}</div>))}</div>)}
                       </div>
-                      <div className="hidden print:block fixed bottom-0 left-0 w-full text-center text-[10px] text-gray-400 border-t pt-2 mt-4">Documento gerado digitalmente pelo App Registro de Ocorridos (Prof. Lucas Sebastião Barbosa Silva). Válido como registro escolar.<br /> Proteção de Dados: Conformidade com Lei nº 13.709/2018 (LGPD).</div>
+                      <div className="hidden print:block w-full text-center text-[10px] text-gray-400 border-t pt-2 mt-4 print:relative print:mt-4 print:border-t print:pt-1">Documento gerado digitalmente pelo App Registro de Ocorridos (Prof. Lucas Sebastião Barbosa Silva). Válido como registro escolar.<br /> Proteção de Dados: Conformidade com Lei nº 13.709/2018 (LGPD).</div>
                       <div className="pt-8 border-t mt-8 print:hidden flex justify-between items-center bg-gray-50 -mx-8 px-8 pb-4 rounded-b-lg"><div className="text-xs text-gray-400">App desenvolvido por Prof. Lucas Sebastião</div><button onClick={initiatePrint} className="flex items-center gap-2 bg-gray-800 text-white px-6 py-3 rounded-lg shadow hover:bg-black transition font-bold"><Printer size={20} /> Imprimir PDF (A4)</button></div>
                     </div>
                   </div>
