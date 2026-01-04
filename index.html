@@ -359,7 +359,9 @@
           const [newReminderText, setNewReminderText] = useState("");
           const [showPrintModal, setShowPrintModal] = useState(false);
           const [schoolName, setSchoolName] = useState('');
+          const [schoolLogo, setSchoolLogo] = useState(''); // Novo estado para a logo oficial
           const [tempSchoolName, setTempSchoolName] = useState('');
+          const [tempSchoolLogo, setTempSchoolLogo] = useState(''); // Novo estado para a logo temporária no modal
           const [showFilters, setShowFilters] = useState(false);
           const [filters, setFilters] = useState({
             aluno: '', nivelEnsino: '', anoTurma: '', letraTurma: '', tipo: '', periodo: '', presentes: '',
@@ -396,6 +398,8 @@
             if (saved) { try { setRecords(JSON.parse(saved)); } catch (e) { console.error("Erro ao carregar dados", e); } }
             const savedSchool = localStorage.getItem('registro_ocorridos_school');
             if (savedSchool) setSchoolName(savedSchool);
+            const savedLogo = localStorage.getItem('registro_ocorridos_logo'); // Carregar logo salva
+            if (savedLogo) setSchoolLogo(savedLogo);
             const savedReminders = localStorage.getItem('registro_ocorridos_lembretes');
             if (savedReminders) { try { setReminders(JSON.parse(savedReminders)); } catch (e) { console.error(e); } }
           }, []);
@@ -404,6 +408,18 @@
           useEffect(() => { localStorage.setItem('registro_ocorridos_lembretes', JSON.stringify(reminders)); }, [reminders]);
           
           const handleSetSchoolName = (name) => { setSchoolName(name); localStorage.setItem('registro_ocorridos_school', name); };
+          
+          // Função para lidar com upload da logo no modal
+          const handleLogoUpload = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setTempSchoolLogo(reader.result);
+            };
+            reader.readAsDataURL(file);
+          };
+
           const addReminder = () => {
               if (!newReminderText.trim()) return;
               const newItem = { id: Date.now(), text: newReminderText, createdAt: new Date().toISOString() };
@@ -509,9 +525,16 @@
               setEditingId(null); setCustomSignerName(''); setCustomSignerRole('');
           };
 
-          const initiatePrint = () => { setTempSchoolName(schoolName); setShowPrintModal(true); };
+          const initiatePrint = () => { 
+              setTempSchoolName(schoolName); 
+              setTempSchoolLogo(schoolLogo); // Inicializa com a logo atual
+              setShowPrintModal(true); 
+          };
           const confirmPrint = () => {
-              handleSetSchoolName(tempSchoolName); setShowPrintModal(false);
+              handleSetSchoolName(tempSchoolName);
+              setSchoolLogo(tempSchoolLogo); // Salva a logo escolhida
+              localStorage.setItem('registro_ocorridos_logo', tempSchoolLogo);
+              setShowPrintModal(false);
               setTimeout(() => { window.print(); }, 300);
           };
 
@@ -706,8 +729,18 @@
                 {view === 'details' && selectedRecord && (
                   <div className="bg-white rounded-lg shadow-xl print:shadow-none print:w-full max-w-4xl mx-auto">
                     <div className="bg-gray-50 p-6 border-b print:bg-white print:border-b-2 print:p-0 print:mb-4">
-                      {schoolName && (<div className="hidden print:block text-center mb-4 border-b-2 pb-2"><h1 className="text-xl font-bold uppercase tracking-wide">{schoolName}</h1></div>)}
-                      <div className="flex justify-between items-start"><div><h2 className="text-2xl font-bold text-gray-800 mb-1 print:text-xl">Registro de Ocorrido Escolar</h2><p className="text-sm text-gray-500 print:text-gray-700">ID: #{selectedRecord.id.slice(-6)} • Gerado em {new Date().toLocaleDateString()}</p></div><div className="flex gap-2"><button onClick={(e) => handleEditRecord(selectedRecord, e)} className="text-gray-500 hover:text-blue-600 print:hidden bg-gray-200 p-2 rounded-full flex items-center gap-2 px-3"><Edit size={16} /> <span className="text-xs font-bold">Editar</span></button><button onClick={() => setView('list')} className="text-gray-500 hover:text-blue-600 print:hidden bg-gray-200 p-2 rounded-full"><X size={20} /></button></div></div>
+                      {/* Cabeçalho de Impressão Atualizado com Logo */}
+                      <div className="hidden print:flex flex-col items-center mb-6 border-b-2 border-gray-800 pb-4">
+                        {schoolLogo && (
+                            <img src={schoolLogo} alt="Logo da Escola" className="h-24 w-auto object-contain mb-2" />
+                        )}
+                        {schoolName && (
+                             <h1 className="text-2xl font-bold uppercase tracking-wide text-center">{schoolName}</h1>
+                        )}
+                        <div className="text-xs text-gray-500 mt-1 uppercase tracking-widest">Relatório de Ocorrência Escolar</div>
+                      </div>
+                      
+                      <div className="flex justify-between items-start"><div><h2 className="text-2xl font-bold text-gray-800 mb-1 print:text-xl print:hidden">Registro de Ocorrido Escolar</h2><p className="text-sm text-gray-500 print:text-gray-700">ID: #{selectedRecord.id.slice(-6)} • Gerado em {new Date().toLocaleDateString()}</p></div><div className="flex gap-2"><button onClick={(e) => handleEditRecord(selectedRecord, e)} className="text-gray-500 hover:text-blue-600 print:hidden bg-gray-200 p-2 rounded-full flex items-center gap-2 px-3"><Edit size={16} /> <span className="text-xs font-bold">Editar</span></button><button onClick={() => setView('list')} className="text-gray-500 hover:text-blue-600 print:hidden bg-gray-200 p-2 rounded-full"><X size={20} /></button></div></div>
                     </div>
                     <div className="p-8 space-y-6 print:p-0 print:space-y-4 text-sm print:text-base">
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-blue-50 p-4 rounded-lg print:bg-transparent print:border print:border-gray-300 print:p-2">
@@ -747,7 +780,50 @@
                 </div>
               </footer>
 
-              {showPrintModal && (<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 print:hidden animate-in"><div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6"><div className="flex justify-between items-center mb-4"><h3 className="text-lg font-bold text-gray-800 flex items-center gap-2"><Printer className="text-blue-600" /> Preparar Impressão</h3><button onClick={() => setShowPrintModal(false)} className="text-gray-400 hover:text-red-500"><X size={20} /></button></div><div className="mb-4"><label className="block text-sm font-medium text-gray-700 mb-2">Nome da Escola</label><div className="relative"><School className="absolute left-3 top-3 text-gray-400" size={18} /><input type="text" className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: Escola Municipal Joaquim Távora" value={tempSchoolName} onChange={(e) => setTempSchoolName(e.target.value)} autoFocus /></div></div><div className="flex justify-end gap-3 pt-2 border-t mt-4"><button onClick={() => setShowPrintModal(false)} className="px-4 py-2 border rounded text-gray-600 hover:bg-gray-50 font-medium">Cancelar</button><button onClick={confirmPrint} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-bold shadow flex items-center gap-2"><Printer size={16} /> Confirmar e Imprimir</button></div></div></div>)}
+              {showPrintModal && (
+                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 print:hidden animate-in">
+                      <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+                          <div className="flex justify-between items-center mb-4">
+                              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2"><Printer className="text-blue-600" /> Preparar Impressão</h3>
+                              <button onClick={() => setShowPrintModal(false)} className="text-gray-400 hover:text-red-500"><X size={20} /></button>
+                          </div>
+                          
+                          <div className="space-y-4">
+                              <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Nome da Escola</label>
+                                  <div className="relative">
+                                      <School className="absolute left-3 top-3 text-gray-400" size={18} />
+                                      <input type="text" className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: Escola Municipal Joaquim Távora" value={tempSchoolName} onChange={(e) => setTempSchoolName(e.target.value)} autoFocus />
+                                  </div>
+                              </div>
+
+                              <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Logo da Escola (Opcional)</label>
+                                  <div className="flex items-center gap-4">
+                                      <label className="cursor-pointer bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg shadow-sm hover:bg-gray-50 text-sm flex items-center gap-2 font-medium transition hover:border-blue-500">
+                                          <ImageIcon size={18} /> Escolher Imagem
+                                          <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+                                      </label>
+                                      {tempSchoolLogo && (
+                                          <div className="h-14 w-14 border rounded bg-gray-50 flex items-center justify-center overflow-hidden relative group">
+                                              <img src={tempSchoolLogo} alt="Preview" className="h-full w-full object-contain" />
+                                              <button onClick={() => setTempSchoolLogo('')} className="absolute inset-0 bg-black bg-opacity-50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition" title="Remover Logo"><X size={16} /></button>
+                                          </div>
+                                      )}
+                                  </div>
+                                  <p className="text-[10px] text-gray-400 mt-1">A imagem será salva no navegador e exibida no topo do PDF.</p>
+                              </div>
+                          </div>
+
+                          <div className="flex justify-end gap-3 pt-4 border-t mt-6">
+                              <button onClick={() => setShowPrintModal(false)} className="px-4 py-2 border rounded text-gray-600 hover:bg-gray-50 font-medium">Cancelar</button>
+                              <button onClick={confirmPrint} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-bold shadow flex items-center gap-2">
+                                  <Printer size={16} /> Confirmar e Imprimir
+                              </button>
+                          </div>
+                      </div>
+                  </div>
+              )}
               {showSignaturePad && (<SignaturePad label={`${currentSigner.role} - ${currentSigner.name}`} onSave={handleSignatureSave} onCancel={() => setShowSignaturePad(false)} />)}
               {/* MODAL DE LICENÇA */}
               {showLicenseModal && (<LicenseModal deviceId={deviceId} onClose={() => setShowLicenseModal(false)} onActivate={handleActivateLicense} />)}
