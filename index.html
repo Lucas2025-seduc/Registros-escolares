@@ -286,7 +286,17 @@
                   <div><h3 className="font-bold text-gray-700">Coletar Assinatura</h3><p className="text-sm text-blue-600 font-medium">{label}</p></div>
                   <button onClick={onCancel} className="text-gray-500 hover:text-red-500"><Icons.X size={24} /></button>
                 </div>
-                <div className="p-4 bg-gray-100"><div className="bg-white border-2 border-dashed border-gray-300 rounded shadow-inner touch-action-none"><canvas ref={canvasRef} className="w-full touch-action-none cursor-crosshair block" onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={stopDrawing} onMouseLeave={stopDrawing} onTouchStart={startDrawing} onTouchMove={draw} onTouchEnd={stopDrawing} style={{ touchAction: 'none' }} /></div><p className="text-xs text-gray-500 mt-2 text-center">Use o dedo ou mouse para assinar.</p></div>
+                <div className="p-4 bg-gray-100">
+                    <div className="bg-white border-2 border-dashed border-gray-300 rounded shadow-inner touch-action-none">
+                        <canvas ref={canvasRef} className="w-full touch-action-none cursor-crosshair block" onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={stopDrawing} onMouseLeave={stopDrawing} onTouchStart={startDrawing} onTouchMove={draw} onTouchEnd={stopDrawing} style={{ touchAction: 'none' }} />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2 text-center">Use o dedo ou mouse para assinar.</p>
+                    
+                    {/* TERMO DE AUTORIZAÇÃO DE IMAGEM/VOZ */}
+                    <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-[10px] text-yellow-800 text-justify leading-tight">
+                        <strong>Termo de Autorização:</strong> Ao assinar, declaro estar ciente e autorizo o uso da minha imagem e voz (áudio), caso tenham sido captados neste registro, exclusivamente para fins de documentação escolar e comprovação dos fatos aqui relatados, em conformidade com a LGPD.
+                    </div>
+                </div>
                 <div className="p-4 border-t flex justify-between bg-white"><button onClick={clearCanvas} className="text-sm text-red-600 hover:underline font-medium">Limpar</button><div className="flex gap-2"><button onClick={onCancel} className="px-4 py-2 border rounded hover:bg-gray-50 text-sm">Cancelar</button><button onClick={handleSave} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2 text-sm font-bold shadow-sm"><Icons.Check size={16} /> Confirmar</button></div></div>
               </div>
             </div>
@@ -826,7 +836,7 @@
                 <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-2">
                   <div className="flex items-center gap-3">
                     {!logoError ? ( <img src="./image_942213.jpg" alt="Logo" className="w-12 h-12 md:w-24 md:h-24 rounded-lg object-cover border-2 border-yellow-400 bg-white" onError={() => setLogoError(true)} /> ) : ( <Icons.BookOpen size={32} className="text-yellow-400" /> )}
-                    <div><h1 className="text-xl font-bold tracking-tight">Registros Escolares</h1><p className="text-xs text-blue-200">App Oficial - Prof. Lucas Sebastião</p></div>
+                    <div><h1 className="text-xl font-bold tracking-tight">Registros Escolares</h1><p className="text-xs text-blue-200">App desenvolvido por Lucas Sebastião Barbosa Silva</p></div>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap justify-center">
                      <button onClick={handleInstallClick} className="flex items-center gap-1 text-[10px] md:text-xs bg-blue-800 hover:bg-blue-700 text-white border border-blue-500 px-3 py-1.5 rounded-full transition shadow-sm"><Icons.Smartphone size={14} /> Instalar App</button>
@@ -1021,7 +1031,7 @@
                         {selectedRecord.assinaturas.length === 0 ? (<p className="text-gray-400 italic text-center py-4 print:py-2">Nenhuma assinatura digital coletada.</p>) : (<div className="grid grid-cols-2 md:grid-cols-3 gap-y-8 gap-x-4 print:gap-y-4 print:gap-x-2">{selectedRecord.assinaturas.map(sig => (<div key={sig.id} className="flex flex-col items-center break-inside-avoid"><div className="h-28 w-full border-b border-gray-800 mb-1 flex items-end justify-center pb-1 relative print:h-16"><img src={sig.imagem} className="max-h-24 max-w-full object-contain print:max-h-14" alt={`Assinatura`} /></div><p className="font-bold text-sm text-center leading-tight print:text-xs">{sig.nome}</p><p className="text-xs text-gray-600 uppercase mb-1 print:text-[10px]">{sig.cargo}</p><p className="text-[9px] text-gray-400 print:text-[8px]">{sig.tipo === 'foto' ? 'Registro Fotográfico em ' : 'Assinado em '}{new Date(sig.timestamp).toLocaleDateString()} às {new Date(sig.timestamp).toLocaleTimeString()}</p>{sig.tipo === 'foto' && (<div className="mt-1 text-[10px] bg-gray-100 px-2 py-0.5 rounded border print:border-gray-300 print:text-[8px]">Ref. Data Ocorrido: {formatDateTime(selectedRecord.data + 'T' + selectedRecord.hora)}</div>)}</div>))}</div>)}
                       </div>
                       <div className="hidden print:block w-full text-center text-[10px] text-gray-400 border-t pt-2 mt-4 print:relative print:mt-4 print:border-t print:pt-1">Documento gerado digitalmente pelo App Registro de Ocorridos (Prof. Lucas Sebastião Barbosa Silva). Válido como registro escolar.<br /> Proteção de Dados: Conformidade com Lei nº 13.709/2018 (LGPD).</div>
-                      <div className="pt-8 border-t mt-8 print:hidden flex justify-between items-center bg-gray-50 -mx-8 px-8 pb-4 rounded-b-lg"><div className="text-xs text-gray-400">App desenvolvido por Prof. Lucas Sebastião</div><button onClick={initiatePrint} className="flex items-center gap-2 bg-gray-800 text-white px-6 py-3 rounded-lg shadow hover:bg-black transition font-bold"><Icons.Printer size={20} /> Imprimir PDF (A4)</button></div>
+                      <div className="pt-8 border-t mt-8 print:hidden flex justify-between items-center bg-gray-50 -mx-8 px-8 pb-4 rounded-b-lg"><div className="text-xs text-gray-400">App desenvolvido por Lucas Sebastião Barbosa Silva</div><button onClick={initiatePrint} className="flex items-center gap-2 bg-gray-800 text-white px-6 py-3 rounded-lg shadow hover:bg-black transition font-bold"><Icons.Printer size={20} /> Imprimir PDF (A4)</button></div>
                     </div>
                   </div>
                 )}
