@@ -15,108 +15,113 @@
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     
-    <!-- Babel para compilar JSX no navegador -->
+    <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Lucide Icons (Versão Vanilla JS) -->
+    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
-        /* Ajustes para impressão */
         @media print {
             @page { margin: 0.5cm; size: A4; }
-            body { 
-                -webkit-print-color-adjust: exact; 
-                font-size: 11px;
-            }
+            body { -webkit-print-color-adjust: exact; font-size: 11px; }
             .no-print { display: none !important; }
             .break-inside-avoid { page-break-inside: avoid; }
-
-            /* Utilitários Específicos de Impressão para Compactação */
             .print\:text-xs { font-size: 10px !important; }
-            .print\:text-xxs { font-size: 9px !important; }
-            .print\:p-0 { padding: 0 !important; }
-            .print\:p-1 { padding: 4px !important; }
-            .print\:m-0 { margin: 0 !important; }
-            .print\:mb-1 { margin-bottom: 4px !important; }
-            .print\:mb-2 { margin-bottom: 8px !important; }
-            .print\:mt-2 { margin-top: 8px !important; }
-            .print\:gap-1 { gap: 4px !important; }
-            .print\:gap-2 { gap: 8px !important; }
-            .print\:h-16 { height: 50px !important; }
-            .print\:h-20 { height: 70px !important; }
-            .print\:min-h-0 { min-height: 0 !important; }
-            .print\:leading-tight { line-height: 1.2 !important; }
-            .print\:shadow-none { box-shadow: none !important; }
-            .print\:bg-transparent { background: transparent !important; }
-            .print\:border-gray-300 { border-color: #d1d5db !important; }
-            
-            /* Esconder elementos desnecessários na impressão */
             .print\:hidden { display: none !important; }
             .print\:block { display: block !important; }
             .print\:flex { display: flex !important; }
-            
-            /* Forçar larguras */
             .print\:w-full { width: 100% !important; }
+            .print\:h-16 { height: 50px !important; }
         }
-        
-        /* Melhoria para toque em mobile */
         .touch-action-none { touch-action: none; }
-        
-        /* Animações simples */
         .animate-in { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .recording-pulse { animation: pulse-red 1.5s infinite; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
     <div id="root"></div>
 
     <script type="text/babel">
-        // --- CÓDIGO REACT ORIGINAL MANTIDO ---
         const { useState, useRef, useEffect } = React;
 
-        // --- SISTEMA DE LICENCIAMENTO ---
-        const SALT_KEY = "LUCAS_SILVA_APP_SECRET_2025_SECURE"; // Segredo para gerar o hash
+        // =========================================================================
+        // MÓDULO DE SEGURANÇA E LICENCIAMENTO (OFUSCADO)
+        // =========================================================================
+        const _SecurityModule = (function() {
+            const _0x1a = "LUCAS_SCHOOL_SECURE_V2_2025_HASH_998811";
+            const _0x2b = "app_install_ts_v2";
+            const _0x3c = "app_device_id_v2";
+            const _0x4d = 3 * 60 * 60 * 1000; // 3 Horas
 
-        // Função simples de Hash (DJB2 Variant) para gerar licença baseada no ID
-        const generateLicenseKey = (deviceId) => {
-            const str = deviceId + SALT_KEY;
-            let hash = 5381;
-            for (let i = 0; i < str.length; i++) {
-                hash = ((hash << 5) + hash) + str.charCodeAt(i); /* hash * 33 + c */
-            }
-            // Retorna uma string Hexadecimal positiva e limpa
-            return (hash >>> 0).toString(16).toUpperCase().padStart(8, '0');
-        };
-
-        const getDeviceId = () => {
-            let id = localStorage.getItem('app_device_id');
-            if (!id) {
-                // Gera um ID aleatório se não existir
-                id = 'DEV-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-                localStorage.setItem('app_device_id', id);
-            }
-            return id;
-        };
-
-        // --- Sistema de Ícones (Wrapper para Lucide Global) ---
-        const createIcon = (iconName) => ({ size = 24, className = "", ...props }) => {
-            const [svgHtml, setSvgHtml] = useState(null);
-            
-            useEffect(() => {
-                if (window.lucide && window.lucide.icons && window.lucide.icons[iconName]) {
-                    const iconData = window.lucide.icons[iconName];
-                    if (Array.isArray(iconData)) {
-                         // Lógica de compatibilidade mantida
-                    }
+            const _0xHash = (str) => {
+                let h = 0;
+                if (str.length === 0) return h;
+                for (let i = 0; i < str.length; i++) {
+                    const c = str.charCodeAt(i);
+                    h = ((h << 5) - h) + c;
+                    h = h & h;
                 }
-            }, [iconName, size, className]);
+                return Math.abs(h).toString(16).toUpperCase();
+            };
 
+            return {
+                getDeviceId: () => {
+                    let id = localStorage.getItem(_0x3c);
+                    if (!id) {
+                        id = 'DEV-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+                        localStorage.setItem(_0x3c, id);
+                    }
+                    return id;
+                },
+                initTrial: () => {
+                    if (!localStorage.getItem(_0x2b)) {
+                        localStorage.setItem(_0x2b, Date.now().toString());
+                    }
+                },
+                checkAccess: (licenseKey) => {
+                    if (licenseKey) {
+                        try {
+                            const parts = licenseKey.split('.');
+                            if (parts.length !== 2) return { valid: false, reason: 'Formato inválido' };
+                            const payload = atob(parts[0]);
+                            const signature = parts[1];
+                            const [devId, expTs] = payload.split('|');
+                            const expectedSig = _0xHash(payload + _0x1a);
+                            if (signature !== expectedSig) return { valid: false, reason: 'Assinatura inválida' };
+                            const currentDevId = localStorage.getItem(_0x3c);
+                            if (devId !== currentDevId) return { valid: false, reason: 'Licença pertence a outro dispositivo' };
+                            if (Date.now() > parseInt(expTs)) return { valid: false, reason: 'Licença expirada', expired: true };
+                            const daysLeft = Math.ceil((parseInt(expTs) - Date.now()) / (1000 * 60 * 60 * 24));
+                            return { valid: true, daysLeft: daysLeft };
+                        } catch (e) {
+                            return { valid: false, reason: 'Erro na verificação' };
+                        }
+                    }
+                    const installTime = parseInt(localStorage.getItem(_0x2b) || "0");
+                    const timeUsed = Date.now() - installTime;
+                    if (timeUsed < _0x4d) {
+                         const minsLeft = Math.ceil((_0x4d - timeUsed) / 60000);
+                         return { valid: true, trial: true, minutesLeft: minsLeft };
+                    }
+                    return { valid: false, reason: 'Período de teste finalizado' };
+                }
+            };
+        })();
+
+        // --- Wrapper de Ícones ---
+        const createIcon = (iconName) => ({ size = 24, className = "", ...props }) => {
             const ref = useRef(null);
-            
             useEffect(() => {
                 if (ref.current) {
                     ref.current.innerHTML = ''; 
@@ -126,91 +131,47 @@
                     i.setAttribute('height', size);
                     if(className) i.setAttribute('class', className);
                     ref.current.appendChild(i);
-                    // Verifica se o Lucide carregou antes de chamar
                     if (window.lucide && window.lucide.createIcons) {
                         window.lucide.createIcons({
                             root: ref.current,
                             nameAttr: 'data-lucide',
-                            attrs: {
-                                class: className,
-                                width: size,
-                                height: size
-                            }
+                            attrs: { class: className, width: size, height: size }
                         });
                     }
                 }
             }, [iconName, size, className]);
-
             return <span ref={ref} style={{ display: 'inline-flex' }} {...props} />;
         };
 
-        const BookOpen = createIcon('BookOpen');
-        const Plus = createIcon('Plus');
-        const Save = createIcon('Save');
-        const Search = createIcon('Search');
-        const Download = createIcon('Download');
-        const Upload = createIcon('Upload');
-        const Trash2 = createIcon('Trash2');
-        const PenTool = createIcon('PenTool');
-        const Camera = createIcon('Camera');
-        const ImageIcon = createIcon('Image'); 
-        const X = createIcon('X');
-        const Check = createIcon('Check');
-        const Calendar = createIcon('Calendar');
-        const User = createIcon('User');
-        const MapPin = createIcon('MapPin');
-        const FileText = createIcon('FileText');
-        const Users = createIcon('Users');
-        const Monitor = createIcon('Monitor');
-        const Printer = createIcon('Printer');
-        const Filter = createIcon('Filter');
-        const SlidersHorizontal = createIcon('SlidersHorizontal');
-        const ChevronDown = createIcon('ChevronDown');
-        const ChevronUp = createIcon('ChevronUp');
-        const GraduationCap = createIcon('GraduationCap');
-        const School = createIcon('School');
-        const Edit = createIcon('Edit');
-        const Bell = createIcon('Bell');
-        const CheckCircle = createIcon('CheckCircle');
-        const ShieldAlert = createIcon('ShieldAlert');
-        const ShieldCheck = createIcon('ShieldCheck');
-        const Lock = createIcon('Lock');
-        const Unlock = createIcon('Unlock');
-        const Key = createIcon('Key');
+        const Icons = {
+            BookOpen: createIcon('BookOpen'), Plus: createIcon('Plus'), Save: createIcon('Save'),
+            Search: createIcon('Search'), Download: createIcon('Download'), Upload: createIcon('Upload'),
+            Trash2: createIcon('Trash2'), PenTool: createIcon('PenTool'), Camera: createIcon('Camera'),
+            ImageIcon: createIcon('Image'), ImagePlus: createIcon('ImagePlus'), Mic: createIcon('Mic'), 
+            X: createIcon('X'), Check: createIcon('Check'), Square: createIcon('Square'), Play: createIcon('Play'),
+            Calendar: createIcon('Calendar'), User: createIcon('User'), MapPin: createIcon('MapPin'),
+            FileText: createIcon('FileText'), Users: createIcon('Users'), Monitor: createIcon('Monitor'),
+            Printer: createIcon('Printer'), Filter: createIcon('Filter'), SlidersHorizontal: createIcon('SlidersHorizontal'),
+            ChevronDown: createIcon('ChevronDown'), ChevronUp: createIcon('ChevronUp'), GraduationCap: createIcon('GraduationCap'),
+            School: createIcon('School'), Edit: createIcon('Edit'), Bell: createIcon('Bell'),
+            CheckCircle: createIcon('CheckCircle'), ShieldAlert: createIcon('ShieldAlert'), ShieldCheck: createIcon('ShieldCheck'),
+            Lock: createIcon('Lock'), Unlock: createIcon('Unlock'), Key: createIcon('Key'), Clock: createIcon('Clock'),
+            Smartphone: createIcon('Smartphone'), Share: createIcon('Share'), Bot: createIcon('Bot'), FileAudio: createIcon('FileAudio'),
+            Info: createIcon('Info'), AlertTriangle: createIcon('AlertTriangle')
+        };
 
-        const TIPOS_OCORRENCIA = [
-          "Advertência", "Ocorrência", "Elogio", "Busca Ativa", "Conflito Socioemocional", 
-          "Orientação Pedagógica", "Registro de Reunião com Pais/Responsáveis", "Outros"
-        ];
-        const LOCAIS = [
-          "Sala de aula", "Coordenação", "Sala da direção de turma", "Secretaria", "Laboratório", 
-          "Direção", "Sala de professores", "Biblioteca", "Refeitório", "Pátio", "Mecanografia", 
-          "Fora da escola", "WhatsApp", "Email", "Ligação telefônica", "Outro"
-        ];
+        const TIPOS_OCORRENCIA = ["Advertência", "Ocorrência", "Elogio", "Busca Ativa", "Conflito Socioemocional", "Orientação Pedagógica", "Registro de Reunião com Pais/Responsáveis", "Outros"];
+        const LOCAIS = ["Sala de aula", "Coordenação", "Sala da direção de turma", "Secretaria", "Laboratório", "Direção", "Sala de professores", "Biblioteca", "Refeitório", "Pátio", "Mecanografia", "Fora da escola", "WhatsApp", "Email", "Ligação telefônica", "Outro"];
         const BIMESTRES = ["1º Bimestre", "2º Bimestre", "3º Bimestre", "4º Bimestre", "Recuperação Final"];
         const SEMESTRES = ["1º Semestre", "2º Semestre", "Recuperação Final"];
         const NIVEIS_ENSINO = ["Ensino Fundamental", "Ensino Médio", "Ensino Superior"];
 
-        const formatDateTime = (isoString) => {
-          if (!isoString) return '';
-          const date = new Date(isoString);
-          return date.toLocaleString('pt-BR');
-        };
-
-        const formatTurma = (record) => {
-          if (record.nivelEnsino && record.anoTurma && record.letraTurma) {
-            let siglaNivel = 'EF';
-            if (record.nivelEnsino === 'Ensino Médio') siglaNivel = 'EM';
-            if (record.nivelEnsino === 'Ensino Superior') siglaNivel = 'ES';
-            return `${record.anoTurma}º ${record.letraTurma} (${siglaNivel})`;
-          }
-          return record.turma || 'Sem turma';
-        };
+        const formatDateTime = (isoString) => { if (!isoString) return ''; const date = new Date(isoString); return date.toLocaleString('pt-BR'); };
+        const formatTurma = (record) => { if (record.nivelEnsino && record.anoTurma && record.letraTurma) { let siglaNivel = 'EF'; if (record.nivelEnsino === 'Ensino Médio') siglaNivel = 'EM'; if (record.nivelEnsino === 'Ensino Superior') siglaNivel = 'ES'; return `${record.anoTurma}º ${record.letraTurma} (${siglaNivel})`; } return record.turma || 'Sem turma'; };
 
         const SignaturePad = ({ onSave, onCancel, label }) => {
           const canvasRef = useRef(null);
           const [isDrawing, setIsDrawing] = useState(false);
-
           useEffect(() => {
             const canvas = canvasRef.current;
             if (canvas) {
@@ -219,160 +180,280 @@
                   canvas.width = parentWidth > 0 ? parentWidth : 300; 
                   canvas.height = 200; 
                   const ctx = canvas.getContext('2d');
-                  ctx.lineWidth = 2;
-                  ctx.lineCap = 'round';
-                  ctx.strokeStyle = '#000';
+                  ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.strokeStyle = '#000';
               }, 50);
             }
           }, []);
-
           const getCoords = (e) => {
-             const canvas = canvasRef.current;
-             const rect = canvas.getBoundingClientRect();
+             const canvas = canvasRef.current; const rect = canvas.getBoundingClientRect();
              const clientX = e.clientX || (e.touches && e.touches[0].clientX);
              const clientY = e.clientY || (e.touches && e.touches[0].clientY);
              return { x: clientX - rect.left, y: clientY - rect.top };
           };
-
-          const startDrawing = (e) => {
-            const { x, y } = getCoords(e);
-            const ctx = canvasRef.current.getContext('2d');
-            ctx.beginPath();
-            ctx.moveTo(x, y);
-            setIsDrawing(true);
-          };
-
-          const draw = (e) => {
-            if (!isDrawing) return;
-            e.preventDefault(); 
-            const { x, y } = getCoords(e);
-            const ctx = canvasRef.current.getContext('2d');
-            ctx.lineTo(x, y);
-            ctx.stroke();
-          };
-
+          const startDrawing = (e) => { const { x, y } = getCoords(e); const ctx = canvasRef.current.getContext('2d'); ctx.beginPath(); ctx.moveTo(x, y); setIsDrawing(true); };
+          const draw = (e) => { if (!isDrawing) return; e.preventDefault(); const { x, y } = getCoords(e); const ctx = canvasRef.current.getContext('2d'); ctx.lineTo(x, y); ctx.stroke(); };
           const stopDrawing = () => { setIsDrawing(false); };
-          const clearCanvas = () => {
-            const canvas = canvasRef.current;
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-          };
-          const handleSave = () => {
-            const canvas = canvasRef.current;
-            onSave(canvas.toDataURL());
-          };
+          const clearCanvas = () => { const canvas = canvasRef.current; const ctx = canvas.getContext('2d'); ctx.clearRect(0, 0, canvas.width, canvas.height); };
+          const handleSave = () => { onSave(canvasRef.current.toDataURL()); };
 
           return (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 print:hidden">
               <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden animate-in">
                 <div className="p-4 border-b bg-gray-50 flex justify-between items-center">
-                  <div>
-                    <h3 className="font-bold text-gray-700">Coletar Assinatura</h3>
-                    <p className="text-sm text-blue-600 font-medium">{label}</p>
-                  </div>
-                  <button onClick={onCancel} className="text-gray-500 hover:text-red-500"><X size={24} /></button>
+                  <div><h3 className="font-bold text-gray-700">Coletar Assinatura</h3><p className="text-sm text-blue-600 font-medium">{label}</p></div>
+                  <button onClick={onCancel} className="text-gray-500 hover:text-red-500"><Icons.X size={24} /></button>
                 </div>
-                <div className="p-4 bg-gray-100">
-                  <div className="bg-white border-2 border-dashed border-gray-300 rounded shadow-inner touch-action-none">
-                    <canvas
-                      ref={canvasRef}
-                      className="w-full touch-action-none cursor-crosshair block"
-                      onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={stopDrawing} onMouseLeave={stopDrawing}
-                      onTouchStart={startDrawing} onTouchMove={draw} onTouchEnd={stopDrawing}
-                      style={{ touchAction: 'none' }}
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2 text-center">Use o dedo ou mouse para assinar.</p>
-                </div>
-                <div className="p-4 border-t flex justify-between bg-white">
-                  <button onClick={clearCanvas} className="text-sm text-red-600 hover:underline font-medium">Limpar</button>
-                  <div className="flex gap-2">
-                    <button onClick={onCancel} className="px-4 py-2 border rounded hover:bg-gray-50 text-sm">Cancelar</button>
-                    <button onClick={handleSave} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2 text-sm font-bold shadow-sm">
-                      <Check size={16} /> Confirmar
-                    </button>
-                  </div>
-                </div>
+                <div className="p-4 bg-gray-100"><div className="bg-white border-2 border-dashed border-gray-300 rounded shadow-inner touch-action-none"><canvas ref={canvasRef} className="w-full touch-action-none cursor-crosshair block" onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={stopDrawing} onMouseLeave={stopDrawing} onTouchStart={startDrawing} onTouchMove={draw} onTouchEnd={stopDrawing} style={{ touchAction: 'none' }} /></div><p className="text-xs text-gray-500 mt-2 text-center">Use o dedo ou mouse para assinar.</p></div>
+                <div className="p-4 border-t flex justify-between bg-white"><button onClick={clearCanvas} className="text-sm text-red-600 hover:underline font-medium">Limpar</button><div className="flex gap-2"><button onClick={onCancel} className="px-4 py-2 border rounded hover:bg-gray-50 text-sm">Cancelar</button><button onClick={handleSave} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2 text-sm font-bold shadow-sm"><Icons.Check size={16} /> Confirmar</button></div></div>
               </div>
             </div>
           );
         };
 
-        // --- COMPONENTE MODAL DE LICENÇA ---
-        const LicenseModal = ({ deviceId, onClose, onActivate }) => {
+        const InstallPrompt = ({ onClose, platform }) => {
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[60] p-6 animate-in">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 relative">
+                        <button onClick={onClose} className="absolute top-2 right-2 text-gray-400 hover:text-gray-800"><Icons.X size={20} /></button>
+                        <div className="text-center">
+                            <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Icons.Smartphone size={32} className="text-blue-600" />
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-800 mb-2">Instalar Aplicativo</h3>
+                            {platform === 'ios' ? (
+                                <div className="text-sm text-gray-600 space-y-3 text-left bg-gray-50 p-4 rounded-lg">
+                                    <p>Para instalar no <strong>iPhone/iPad</strong>:</p>
+                                    <div className="flex items-center gap-2">1. Toque no botão <Icons.Share size={16} className="text-blue-600" /> <strong>Compartilhar</strong> do navegador.</div>
+                                    <div className="flex items-center gap-2">2. Role e selecione <span className="font-bold bg-gray-200 px-1 rounded">Adicionar à Tela de Início</span>.</div>
+                                </div>
+                            ) : (
+                                <p className="text-gray-600 mb-4">Para uma melhor experiência, adicione este aplicativo à sua tela inicial. Ele funcionará como um app nativo!</p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const LicenseModal = ({ deviceId, onClose, onActivate, status }) => {
             const [inputKey, setInputKey] = useState("");
             const [error, setError] = useState("");
 
             const handleBuyClick = () => {
-                const message = `Olá, gostaria de adquirir a licença vitalícia para o App de Registro de Ocorridos.\n\nMeu ID do Dispositivo é: *${deviceId}*`;
+                const message = `Olá, gostaria de adquirir uma licença para o App de Registro de Ocorridos.\n\nMeu ID do Dispositivo é: *${deviceId}*`;
                 const url = `https://wa.me/558899361992?text=${encodeURIComponent(message)}`;
                 window.open(url, '_blank');
             };
 
             const handleValidate = () => {
-                const expected = generateLicenseKey(deviceId);
-                if (inputKey.trim().toUpperCase() === expected) {
-                    onActivate(inputKey.trim().toUpperCase());
+                const check = _SecurityModule.checkAccess(inputKey.trim());
+                if (check.valid && !check.trial) {
+                    onActivate(inputKey.trim());
                 } else {
-                    setError("Chave inválida. Verifique o código e tente novamente.");
+                    setError("Chave inválida ou expirada. Verifique o código.");
                 }
             };
 
             return (
-                <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4 print:hidden animate-in">
-                    <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg overflow-hidden border-t-4 border-yellow-500">
+                <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4 print:hidden animate-in backdrop-blur-sm">
+                    <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg overflow-hidden border-t-4 border-red-500">
                         <div className="p-6 text-center">
-                            <div className="bg-yellow-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Lock size={32} className="text-yellow-600" />
+                            <div className="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Icons.Lock size={32} className="text-red-600" />
                             </div>
-                            <h2 className="text-2xl font-bold text-gray-800 mb-2">Versão Gratuita Limitada</h2>
-                            <p className="text-gray-600 mb-6">
-                                Você atingiu o limite de <strong>1 registro gratuito</strong>. 
-                                Para registrar ilimitadamente neste dispositivo, é necessário ativar uma licença.
-                            </p>
-                            
-                            <div className="bg-gray-100 p-4 rounded-lg mb-6 text-left">
+                            <h2 className="text-2xl font-bold text-gray-800 mb-2">{status?.reason === 'Período de teste finalizado' ? 'Período de Teste Encerrado' : 'Licença Necessária'}</h2>
+                            <p className="text-gray-600 mb-6">O modo gratuito de 3 horas expirou ou sua licença venceu. Para continuar usando todas as funções, ative uma nova licença.</p>
+                            <div className="bg-gray-100 p-4 rounded-lg mb-6 text-left border border-gray-200">
                                 <p className="text-xs font-bold text-gray-500 uppercase mb-1">Seu ID do Dispositivo</p>
                                 <div className="flex justify-between items-center bg-white border p-2 rounded">
                                     <code className="text-lg font-mono font-bold text-blue-600 select-all">{deviceId}</code>
+                                    <button onClick={() => {navigator.clipboard.writeText(deviceId); alert("ID copiado!")}} className="text-xs text-blue-500 hover:underline">Copiar</button>
                                 </div>
-                                <p className="text-[10px] text-gray-400 mt-1">Este ID é único para este aparelho/navegador.</p>
+                                <p className="text-[10px] text-gray-400 mt-1">Envie este código para adquirir sua licença.</p>
                             </div>
-
-                            <button 
-                                onClick={handleBuyClick}
-                                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg shadow-md flex items-center justify-center gap-2 mb-4 transition transform hover:scale-[1.02]"
-                            >
+                            <button onClick={handleBuyClick} className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg shadow-md flex items-center justify-center gap-2 mb-4 transition transform hover:scale-[1.02]">
                                 <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" className="w-5 h-5" alt="WhatsApp" />
-                                Comprar Licença via WhatsApp
+                                Adquirir Licença via WhatsApp
                             </button>
-                            
                             <div className="border-t pt-4">
-                                <p className="text-sm font-medium text-gray-700 mb-2">Já tem a chave?</p>
+                                <p className="text-sm font-medium text-gray-700 mb-2">Já recebeu a chave?</p>
                                 <div className="flex gap-2">
-                                    <input 
-                                        type="text" 
-                                        className="flex-1 border border-gray-300 rounded p-2 uppercase text-center font-mono"
-                                        placeholder="INSIRA A CHAVE AQUI"
-                                        value={inputKey}
-                                        onChange={(e) => {setInputKey(e.target.value); setError('');}}
-                                    />
-                                    <button 
-                                        onClick={handleValidate}
-                                        className="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700"
-                                    >
-                                        Ativar
-                                    </button>
+                                    <input type="text" className="flex-1 border border-gray-300 rounded p-2 text-center font-mono text-sm" placeholder="Cole a chave aqui..." value={inputKey} onChange={(e) => {setInputKey(e.target.value); setError('');}} />
+                                    <button onClick={handleValidate} className="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700 text-sm">Ativar</button>
                                 </div>
-                                {error && <p className="text-red-500 text-sm mt-2 font-bold">{error}</p>}
+                                {error && <p className="text-red-500 text-sm mt-2 font-bold animate-pulse">{error}</p>}
                             </div>
                         </div>
                         <div className="bg-gray-50 p-3 text-center">
-                            <button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-sm underline">
-                                Fechar e visualizar registros existentes
-                            </button>
+                            <button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-sm underline">Apenas visualizar registros (Modo Leitura)</button>
                         </div>
                     </div>
+                </div>
+            );
+        };
+
+        // --- COMPONENTE GRAVADOR COM CONSENTIMENTO (Atualizado) ---
+        const AudioRecorder = ({ onSaveAudio }) => {
+            const [recording, setRecording] = useState(false);
+            const [mediaRecorder, setMediaRecorder] = useState(null);
+            
+            // Estados de conteúdo
+            const [recordedAudioBlob, setRecordedAudioBlob] = useState(null);
+            const [isReviewing, setIsReviewing] = useState(false);
+            
+            // Consentimento e Suporte
+            const [isSupported, setIsSupported] = useState(false);
+            const [timer, setTimer] = useState(0);
+            const [consentGiven, setConsentGiven] = useState(false); // NOVO
+            
+            const timerRef = useRef(null);
+            const chunksRef = useRef([]);
+
+            useEffect(() => {
+                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                    setIsSupported(true);
+                }
+            }, []);
+
+            const startRecording = async () => {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    const recorder = new MediaRecorder(stream);
+                    chunksRef.current = [];
+
+                    recorder.ondataavailable = (e) => {
+                        if (e.data.size > 0) chunksRef.current.push(e.data);
+                    };
+
+                    recorder.onstop = () => {
+                        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+                        const reader = new FileReader();
+                        reader.readAsDataURL(blob);
+                        reader.onloadend = () => {
+                            setRecordedAudioBlob(reader.result); 
+                        };
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+
+                    recorder.start();
+                    setMediaRecorder(recorder);
+                    setRecording(true);
+                    setIsReviewing(false);
+                    setRecordedAudioBlob(null);
+                    
+                    setTimer(0);
+                    timerRef.current = setInterval(() => setTimer(t => t + 1), 1000);
+                } catch (err) {
+                    alert("Erro ao acessar microfone. Verifique as permissões.");
+                }
+            };
+
+            const stopRecording = () => {
+                if (mediaRecorder && recording) {
+                    mediaRecorder.stop();
+                    setRecording(false);
+                    setIsReviewing(true);
+                    clearInterval(timerRef.current);
+                }
+            };
+
+            const formatTimer = (seconds) => {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+            };
+
+            const handleSaveAll = () => {
+                if(recordedAudioBlob) onSaveAudio(recordedAudioBlob);
+                // Resetar estados
+                setIsReviewing(false);
+                setRecordedAudioBlob(null);
+                setRecording(false);
+                setConsentGiven(false); // Forçar novo consentimento para próxima gravação
+            };
+
+            if (!isSupported) return null;
+
+            return (
+                <div className="bg-slate-100 border border-slate-300 rounded-lg p-4 mt-4">
+                    <div className="flex items-center justify-between mb-3 border-b border-slate-200 pb-2">
+                        <span className="text-sm font-bold uppercase text-slate-600 flex items-center gap-2">
+                            <Icons.Mic size={18} className="text-blue-600" /> Registro de Áudio
+                        </span>
+                        {recording && <span className="text-red-600 text-xs font-bold animate-pulse flex items-center gap-1">● REC {formatTimer(timer)}</span>}
+                    </div>
+
+                    {!recording && !isReviewing && (
+                        <div className="space-y-4 animate-in fade-in">
+                            <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg text-xs text-yellow-800">
+                                <div className="flex items-center gap-2 font-bold mb-1">
+                                    <Icons.AlertTriangle size={14} /> Aviso Legal - Consentimento
+                                </div>
+                                <p className="mb-2 text-justify">
+                                    Em conformidade com a <strong>LGPD (Lei nº 13.709/2018)</strong> e o <strong>Art. 5º, X da Constituição Federal</strong>, 
+                                    a gravação de conversas requer o conhecimento e consentimento das partes envolvidas.
+                                </p>
+                                <label className="flex items-start gap-2 cursor-pointer bg-white p-2 rounded border border-yellow-300 hover:bg-yellow-100 transition">
+                                    <input 
+                                        type="checkbox" 
+                                        className="mt-0.5 w-4 h-4 text-blue-600 rounded focus:ring-blue-500" 
+                                        checked={consentGiven}
+                                        onChange={(e) => setConsentGiven(e.target.checked)}
+                                    />
+                                    <span className="font-bold">
+                                        Declaro que todos os participantes presentes foram informados e autorizaram a gravação deste áudio para fins de registro.
+                                    </span>
+                                </label>
+                            </div>
+
+                            <button 
+                                onClick={(e) => { e.preventDefault(); startRecording(); }} 
+                                disabled={!consentGiven}
+                                className={`w-full py-3 rounded-lg flex items-center justify-center gap-2 font-bold shadow-sm transition ${consentGiven ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
+                            >
+                                <Icons.Mic size={20} /> Iniciar Gravação
+                            </button>
+                        </div>
+                    )}
+
+                    {recording && (
+                        <div className="space-y-3 py-4 text-center">
+                            <p className="text-sm text-gray-600 animate-pulse">Gravando áudio da reunião...</p>
+                            <button 
+                                onClick={(e) => { e.preventDefault(); stopRecording(); }} 
+                                className="w-full max-w-xs mx-auto bg-slate-800 hover:bg-black text-white py-3 rounded-lg flex items-center justify-center gap-2 font-bold shadow-md recording-pulse"
+                            >
+                                <Icons.Square size={20} fill="currentColor" /> Parar Gravação
+                            </button>
+                        </div>
+                    )}
+
+                    {isReviewing && (
+                        <div className="space-y-3 animate-in fade-in">
+                            <div className="bg-white p-3 rounded border space-y-2">
+                                <label className="text-xs font-bold text-gray-500 block">Revisar Áudio</label>
+                                {recordedAudioBlob && (
+                                    <audio controls src={recordedAudioBlob} className="w-full h-10" />
+                                )}
+                            </div>
+                            
+                            <div className="flex gap-2">
+                                <button 
+                                    onClick={(e) => { e.preventDefault(); handleSaveAll(); }} 
+                                    className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg font-bold text-sm flex items-center justify-center gap-2"
+                                >
+                                    <Icons.Check size={18} /> Confirmar e Anexar
+                                </button>
+                                <button 
+                                    onClick={(e) => { e.preventDefault(); setIsReviewing(false); setRecordedAudioBlob(null); setConsentGiven(false); }} 
+                                    className="px-4 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg font-bold text-sm flex items-center gap-2"
+                                    title="Descartar"
+                                >
+                                    <Icons.Trash2 size={18} /> Descartar
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         };
@@ -380,35 +461,32 @@
         function App() {
           const [view, setView] = useState('list');
           const [records, setRecords] = useState([]);
-          // Estado para controlar erro no carregamento da logo
           const [logoError, setLogoError] = useState(false);
-
           const [selectedRecord, setSelectedRecord] = useState(null);
           const [editingId, setEditingId] = useState(null); 
           const [reminders, setReminders] = useState([]);
           const [newReminderText, setNewReminderText] = useState("");
           const [showPrintModal, setShowPrintModal] = useState(false);
           const [schoolName, setSchoolName] = useState('');
-          const [schoolLogo, setSchoolLogo] = useState(''); // Novo estado para a logo oficial
+          const [schoolLogo, setSchoolLogo] = useState('');
           const [tempSchoolName, setTempSchoolName] = useState('');
-          const [tempSchoolLogo, setTempSchoolLogo] = useState(''); // Novo estado para a logo temporária no modal
+          const [tempSchoolLogo, setTempSchoolLogo] = useState('');
           const [showFilters, setShowFilters] = useState(false);
-          const [filters, setFilters] = useState({
-            aluno: '', nivelEnsino: '', anoTurma: '', letraTurma: '', tipo: '', periodo: '', presentes: '',
-            dataInicio: '', dataFim: '', modalidade: '', local: '', conteudo: '' 
-          });
+          const [filters, setFilters] = useState({ aluno: '', nivelEnsino: '', anoTurma: '', letraTurma: '', tipo: '', periodo: '', presentes: '', dataInicio: '', dataFim: '', modalidade: '', local: '', conteudo: '' });
           
-          // Estados de Licença
           const [deviceId, setDeviceId] = useState('');
-          const [isLicensed, setIsLicensed] = useState(false);
+          const [licenseStatus, setLicenseStatus] = useState({ valid: true, trial: true });
           const [showLicenseModal, setShowLicenseModal] = useState(false);
+          const [installPrompt, setInstallPrompt] = useState(null);
+          const [showInstallHelp, setShowInstallHelp] = useState(false);
 
           const [formData, setFormData] = useState({
             tipoSelecionado: TIPOS_OCORRENCIA[0], tipoOutro: '', modalidade: 'Presencial', regime: 'Bimestre', 
             periodo: '1º Bimestre', data: new Date().toISOString().split('T')[0],
             hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
             localSelecionado: 'Sala de aula', localOutro: '', aluno: '', nivelEnsino: 'Ensino Fundamental',
-            anoTurma: '', letraTurma: '', turma: '', outrosPresentes: '', descricao: '', providencias: '', assinaturas: []
+            anoTurma: '', letraTurma: '', turma: '', outrosPresentes: '', descricao: '', providencias: '', assinaturas: [],
+            anexos: [] 
           });
           const [customSignerName, setCustomSignerName] = useState('');
           const [customSignerRole, setCustomSignerRole] = useState('');
@@ -416,132 +494,133 @@
           const [currentSigner, setCurrentSigner] = useState({ name: '', role: '' });
           
           useEffect(() => {
-            // Inicializar Device ID e Licença
-            const id = getDeviceId();
+            const id = _SecurityModule.getDeviceId();
             setDeviceId(id);
-            const savedKey = localStorage.getItem('app_license_key');
-            if (savedKey && savedKey === generateLicenseKey(id)) {
-                setIsLicensed(true);
-            }
+            _SecurityModule.initTrial();
+            const checkLicense = () => {
+                const savedKey = localStorage.getItem('app_license_key_v2');
+                const status = _SecurityModule.checkAccess(savedKey);
+                setLicenseStatus(status);
+            };
+            checkLicense();
+            const interval = setInterval(checkLicense, 60000);
 
             const saved = localStorage.getItem('registro_ocorridos_db');
-            if (saved) { try { setRecords(JSON.parse(saved)); } catch (e) { console.error("Erro ao carregar dados", e); } }
+            if (saved) { try { setRecords(JSON.parse(saved)); } catch (e) { } }
             const savedSchool = localStorage.getItem('registro_ocorridos_school');
             if (savedSchool) setSchoolName(savedSchool);
-            const savedLogo = localStorage.getItem('registro_ocorridos_logo'); // Carregar logo salva
+            const savedLogo = localStorage.getItem('registro_ocorridos_logo');
             if (savedLogo) setSchoolLogo(savedLogo);
             const savedReminders = localStorage.getItem('registro_ocorridos_lembretes');
-            if (savedReminders) { try { setReminders(JSON.parse(savedReminders)); } catch (e) { console.error(e); } }
+            if (savedReminders) { try { setReminders(JSON.parse(savedReminders)); } catch (e) { } }
+
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                setInstallPrompt(e);
+            });
+            return () => clearInterval(interval);
           }, []);
 
           useEffect(() => { localStorage.setItem('registro_ocorridos_db', JSON.stringify(records)); }, [records]);
           useEffect(() => { localStorage.setItem('registro_ocorridos_lembretes', JSON.stringify(reminders)); }, [reminders]);
           
           const handleSetSchoolName = (name) => { setSchoolName(name); localStorage.setItem('registro_ocorridos_school', name); };
-          
-          // Função para lidar com upload da logo no modal
-          const handleLogoUpload = (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setTempSchoolLogo(reader.result);
-            };
-            reader.readAsDataURL(file);
-          };
-
-          const addReminder = () => {
-              if (!newReminderText.trim()) return;
-              const newItem = { id: Date.now(), text: newReminderText, createdAt: new Date().toISOString() };
-              setReminders([newItem, ...reminders]); setNewReminderText("");
-          };
-          const completeReminder = (id) => { setReminders(reminders.filter(item => item.id !== id)); };
+          const handleLogoUpload = (e) => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onloadend = () => { setTempSchoolLogo(reader.result); }; reader.readAsDataURL(file); };
+          const addReminder = () => { if (!newReminderText.trim()) return; const newItem = { id: Date.now(), text: newReminderText, createdAt: new Date().toISOString() }; setReminders([newItem, ...reminders]); setNewReminderText(""); };
+          const completeReminder = (id) => { if(window.confirm("Tem certeza que deseja remover este lembrete?")) { setReminders(reminders.filter(item => item.id !== id)); } };
 
           const handleActivateLicense = (key) => {
-              localStorage.setItem('app_license_key', key);
-              setIsLicensed(true);
+              localStorage.setItem('app_license_key_v2', key);
+              const status = _SecurityModule.checkAccess(key);
+              setLicenseStatus(status);
               setShowLicenseModal(false);
-              alert("Licença ativada com sucesso! Você agora tem acesso ilimitado.");
+              alert("Licença ativada com sucesso!");
           };
 
-          // --- Verificação de Bloqueio ---
-          const checkLimitAndProceed = (actionCallback) => {
-              if (isLicensed) {
-                  actionCallback();
-              } else {
-                  if (records.length >= 1) {
-                      setShowLicenseModal(true);
-                  } else {
-                      actionCallback();
-                  }
-              }
+          const handleInstallClick = () => {
+              const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+              if (isIOS) { setShowInstallHelp('ios'); } else if (installPrompt) { installPrompt.prompt(); installPrompt.userChoice.then((choiceResult) => { if (choiceResult.outcome === 'accepted') { setInstallPrompt(null); } }); } else { alert("Para instalar, use a opção 'Adicionar à Tela Inicial' do menu do seu navegador."); }
+          };
+
+          const checkPermission = (actionCallback) => {
+              const savedKey = localStorage.getItem('app_license_key_v2');
+              const currentStatus = _SecurityModule.checkAccess(savedKey);
+              setLicenseStatus(currentStatus);
+              if (currentStatus.valid) { actionCallback(); } else { setShowLicenseModal(true); }
           };
 
           const handleExport = () => {
             const dataStr = JSON.stringify(records, null, 2);
             const blob = new Blob([dataStr], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url; link.download = `backup_ocorridos_${new Date().toISOString().split('T')[0]}.json`;
+            const link = document.createElement('a'); link.href = url; link.download = `backup_ocorridos_${new Date().toISOString().split('T')[0]}.json`;
             document.body.appendChild(link); link.click(); document.body.removeChild(link);
           };
+          
           const handleImport = (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
+            const file = e.target.files[0]; if (!file) return;
             const reader = new FileReader();
-            reader.onload = (event) => {
-              try {
-                const importedData = JSON.parse(event.target.result);
-                if (Array.isArray(importedData)) {
-                    // Verifica licença ao importar também
-                    if (!isLicensed && importedData.length > 1) {
-                        alert("Você não pode importar mais de 1 registro na versão gratuita. Ative a licença primeiro.");
-                        setShowLicenseModal(true);
-                        return;
-                    }
-                    if(window.confirm(`Isso substituirá os registros atuais. Deseja continuar?`)) {
-                        setRecords(importedData); alert('Dados importados com sucesso!');
-                    }
-                }
-              } catch (err) { alert('Erro ao ler o arquivo.'); }
-            };
+            reader.onload = (event) => { try { const importedData = JSON.parse(event.target.result); if (Array.isArray(importedData)) { if(window.confirm(`Isso substituirá os registros atuais. Deseja continuar?`)) { setRecords(importedData); alert('Dados importados com sucesso!'); } } } catch (err) { alert('Erro ao ler o arquivo.'); } };
             reader.readAsText(file);
           };
 
+          const handleAttachmentUpload = (e, type) => {
+              const file = e.target.files[0];
+              if (!file) return;
+              if (file.size > 3 * 1024 * 1024) { alert("Arquivo muito grande. O limite é 3MB."); return; }
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                  const newAtt = { id: Date.now(), type: type, content: reader.result, name: file.name };
+                  setFormData(prev => ({ ...prev, anexos: [...prev.anexos, newAtt] }));
+              };
+              reader.readAsDataURL(file);
+          };
+
+          // --- Handler de Gravação de Áudio ---
+          const handleAudioRecorded = (base64Audio) => {
+              const newAtt = { id: Date.now(), type: 'audio', content: base64Audio, name: `Gravação de Voz ${new Date().toLocaleTimeString()}` };
+              setFormData(prev => ({ ...prev, anexos: [...prev.anexos, newAtt] }));
+          };
+
+          const removeAttachment = (id) => {
+              if(window.confirm("Remover este anexo?")) {
+                  setFormData(prev => ({ ...prev, anexos: prev.anexos.filter(a => a.id !== id) }));
+              }
+          };
+
           const handleSaveRecord = () => {
-            if (!formData.aluno || !formData.descricao) { alert("Nome do aluno e descrição são obrigatórios."); return; }
-            
-            // Verifica limite antes de salvar um NOVO registro
-            if (!editingId && !isLicensed && records.length >= 1) {
-                setShowLicenseModal(true);
-                return;
-            }
+            if (!formData.descricao) { alert("A descrição do ocorrido é obrigatória."); return; }
+            checkPermission(() => {
+                const tipoFinal = formData.tipoSelecionado === 'Outros' ? formData.tipoOutro : formData.tipoSelecionado;
+                const localFinal = formData.localSelecionado === 'Outro' ? formData.localOutro : formData.localSelecionado;
+                const alunoFinal = formData.aluno.trim() || "Aluno Não Identificado";
+                const recordData = { ...formData, aluno: alunoFinal, tipo: tipoFinal, local: localFinal };
 
-            const tipoFinal = formData.tipoSelecionado === 'Outros' ? formData.tipoOutro : formData.tipoSelecionado;
-            const localFinal = formData.localSelecionado === 'Outro' ? formData.localOutro : formData.localSelecionado;
-            const recordData = { ...formData, tipo: tipoFinal, local: localFinal };
-
-            if (editingId) {
-                setRecords(records.map(r => r.id === editingId ? { ...r, ...recordData } : r));
-                alert("Registro atualizado com sucesso!");
-            } else {
-                setRecords([{ id: Date.now().toString(), createdAt: new Date().toISOString(), ...recordData }, ...records]);
-            }
-            resetForm(); setView('list');
+                if (editingId) {
+                    setRecords(records.map(r => r.id === editingId ? { ...r, ...recordData } : r));
+                    alert("Registro atualizado!");
+                } else {
+                    setRecords([{ id: Date.now().toString(), createdAt: new Date().toISOString(), ...recordData }, ...records]);
+                }
+                resetForm(); setView('list');
+            });
           };
 
           const handleEditRecord = (record, e) => {
             e.stopPropagation(); 
-            const isTipoPadrao = TIPOS_OCORRENCIA.includes(record.tipo);
-            const isLocalPadrao = LOCAIS.includes(record.local);
-            setFormData({
-                ...record,
-                tipoSelecionado: isTipoPadrao ? record.tipo : 'Outros',
-                tipoOutro: isTipoPadrao ? '' : record.tipo,
-                localSelecionado: isLocalPadrao ? record.local : 'Outro',
-                localOutro: isLocalPadrao ? '' : record.local
+            checkPermission(() => {
+                const isTipoPadrao = TIPOS_OCORRENCIA.includes(record.tipo);
+                const isLocalPadrao = LOCAIS.includes(record.local);
+                setFormData({
+                    ...record,
+                    anexos: record.anexos || [],
+                    tipoSelecionado: isTipoPadrao ? record.tipo : 'Outros',
+                    tipoOutro: isTipoPadrao ? '' : record.tipo,
+                    localSelecionado: isLocalPadrao ? record.local : 'Outro',
+                    localOutro: isLocalPadrao ? '' : record.local
+                });
+                setEditingId(record.id); setView('create');
             });
-            setEditingId(record.id); setView('create');
           };
 
           const resetForm = () => {
@@ -550,53 +629,20 @@
                 periodo: '1º Bimestre', data: new Date().toISOString().split('T')[0],
                 hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
                 localSelecionado: 'Sala de aula', localOutro: '', aluno: '', nivelEnsino: 'Ensino Fundamental',
-                anoTurma: '', letraTurma: '', turma: '', outrosPresentes: '', descricao: '', providencias: '', assinaturas: []
+                anoTurma: '', letraTurma: '', turma: '', outrosPresentes: '', descricao: '', providencias: '', assinaturas: [], anexos: []
               });
               setEditingId(null); setCustomSignerName(''); setCustomSignerRole('');
           };
 
-          const initiatePrint = () => { 
-              setTempSchoolName(schoolName); 
-              setTempSchoolLogo(schoolLogo); // Inicializa com a logo atual
-              setShowPrintModal(true); 
-          };
-          const confirmPrint = () => {
-              handleSetSchoolName(tempSchoolName);
-              setSchoolLogo(tempSchoolLogo); // Salva a logo escolhida
-              localStorage.setItem('registro_ocorridos_logo', tempSchoolLogo);
-              setShowPrintModal(false);
-              setTimeout(() => { window.print(); }, 300);
-          };
-
-          const openSignaturePad = (name, role) => {
-            if (!name) { alert("Por favor, preencha o nome antes de assinar."); return; }
-            setCurrentSigner({ name, role }); setShowSignaturePad(true);
-          };
-          const handleSignatureSave = (dataUrl) => {
-            const newSignature = { id: Date.now(), nome: currentSigner.name, cargo: currentSigner.role, tipo: 'desenho', imagem: dataUrl, timestamp: new Date().toISOString() };
-            setFormData(prev => ({ ...prev, assinaturas: [...prev.assinaturas, newSignature] }));
-            setShowSignaturePad(false);
-            if (currentSigner.role !== 'Aluno') { setCustomSignerName(''); setCustomSignerRole(''); }
-          };
-          const handlePhotoUpload = (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onloadend = () => {
-              const newSignature = { id: Date.now(), nome: "Registro Fotográfico", cargo: "Evidência", tipo: 'foto', imagem: reader.result, timestamp: new Date().toISOString() };
-              setFormData(prev => ({ ...prev, assinaturas: [...prev.assinaturas, newSignature] }));
-            };
-            reader.readAsDataURL(file);
-          };
-          const removeSignature = (id) => {
-            if(window.confirm("Remover esta assinatura/foto?")) {
-                setFormData(prev => ({ ...prev, assinaturas: prev.assinaturas.filter(s => s.id !== id) }));
-            }
-          };
+          const initiatePrint = () => { setTempSchoolName(schoolName); setTempSchoolLogo(schoolLogo); setShowPrintModal(true); };
+          const confirmPrint = () => { handleSetSchoolName(tempSchoolName); setSchoolLogo(tempSchoolLogo); localStorage.setItem('registro_ocorridos_logo', tempSchoolLogo); setShowPrintModal(false); setTimeout(() => { window.print(); }, 300); };
+          const openSignaturePad = (name, role) => { if (!name) { alert("Preencha o nome antes."); return; } setCurrentSigner({ name, role }); setShowSignaturePad(true); };
+          const handleSignatureSave = (dataUrl) => { const newSignature = { id: Date.now(), nome: currentSigner.name, cargo: currentSigner.role, tipo: 'desenho', imagem: dataUrl, timestamp: new Date().toISOString() }; setFormData(prev => ({ ...prev, assinaturas: [...prev.assinaturas, newSignature] })); setShowSignaturePad(false); if (currentSigner.role !== 'Aluno') { setCustomSignerName(''); setCustomSignerRole(''); } };
+          const handlePhotoUpload = (e) => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onloadend = () => { const newSignature = { id: Date.now(), nome: "Registro Fotográfico", cargo: "Evidência", tipo: 'foto', imagem: reader.result, timestamp: new Date().toISOString() }; setFormData(prev => ({ ...prev, assinaturas: [...prev.assinaturas, newSignature] })); }; reader.readAsDataURL(file); };
+          const removeSignature = (id) => { if(window.confirm("Remover esta assinatura/foto?")) setFormData(prev => ({ ...prev, assinaturas: prev.assinaturas.filter(s => s.id !== id) })); };
 
           const filteredRecords = records.filter(r => {
             const matchAluno = filters.aluno ? r.aluno.toLowerCase().includes(filters.aluno.toLowerCase()) : true;
-            // ... (restante dos filtros igual)
             const matchTipo = filters.tipo ? r.tipo === filters.tipo : true;
             const matchPeriodo = filters.periodo ? r.periodo === filters.periodo : true;
             const matchPresentes = filters.presentes ? r.outrosPresentes && r.outrosPresentes.toLowerCase().includes(filters.presentes.toLowerCase()) : true;
@@ -607,11 +653,7 @@
             const matchLocal = filters.local ? r.local && r.local.toLowerCase().includes(filters.local.toLowerCase()) : true;
             const matchConteudo = filters.conteudo ? (r.descricao.toLowerCase().includes(filters.conteudo.toLowerCase()) || (r.providencias && r.providencias.toLowerCase().includes(filters.conteudo.toLowerCase()))) : true;
             let matchData = true;
-            if (filters.dataInicio || filters.dataFim) {
-                const recordDate = new Date(r.data); recordDate.setHours(0,0,0,0);
-                if (filters.dataInicio) { const d = new Date(filters.dataInicio); d.setHours(0,0,0,0); if (recordDate < d) matchData = false; }
-                if (filters.dataFim) { const d = new Date(filters.dataFim); d.setHours(0,0,0,0); if (recordDate > d) matchData = false; }
-            }
+            if (filters.dataInicio || filters.dataFim) { const recordDate = new Date(r.data); recordDate.setHours(0,0,0,0); if (filters.dataInicio) { const d = new Date(filters.dataInicio); d.setHours(0,0,0,0); if (recordDate < d) matchData = false; } if (filters.dataFim) { const d = new Date(filters.dataFim); d.setHours(0,0,0,0); if (recordDate > d) matchData = false; } }
             return matchAluno && matchNivel && matchAno && matchLetra && matchTipo && matchPeriodo && matchPresentes && matchModalidade && matchLocal && matchConteudo && matchData;
           });
           const activeFiltersCount = Object.values(filters).filter(Boolean).length;
@@ -622,33 +664,12 @@
               <header className="bg-blue-900 text-white p-4 shadow-lg sticky top-0 z-40 print:hidden">
                 <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-2">
                   <div className="flex items-center gap-3">
-                    {/* Lógica da Logo: Tenta carregar a imagem, se falhar usa o ícone */}
-                    {!logoError ? (
-                        <img 
-                            src="./image_942213.jpg" 
-                            alt="Logo da Escola" 
-                            className="w-24 h-24 rounded-lg object-cover border-2 border-yellow-400 bg-white"
-                            onError={() => setLogoError(true)}
-                        />
-                    ) : (
-                        <BookOpen size={32} className="text-yellow-400" />
-                    )}
-                    <div>
-                        <h1 className="text-xl font-bold tracking-tight">Registros escolares</h1>
-                        <p className="text-xs text-blue-200">Aplicativo desenvolvido por Lucas Sebastião Barbosa Silva</p>
-                    </div>
+                    {!logoError ? ( <img src="./image_942213.jpg" alt="Logo" className="w-12 h-12 md:w-24 md:h-24 rounded-lg object-cover border-2 border-yellow-400 bg-white" onError={() => setLogoError(true)} /> ) : ( <Icons.BookOpen size={32} className="text-yellow-400" /> )}
+                    <div><h1 className="text-xl font-bold tracking-tight">Registros Escolares</h1><p className="text-xs text-blue-200">App Oficial - Prof. Lucas Sebastião</p></div>
                   </div>
-                  {/* Status da Licença */}
-                  <div className="flex items-center gap-2">
-                     {!isLicensed ? (
-                        <button onClick={() => setShowLicenseModal(true)} className="flex items-center gap-1 text-[10px] md:text-xs bg-yellow-500 hover:bg-yellow-600 text-black font-bold px-3 py-1 rounded-full animate-pulse transition">
-                             <Lock size={14} /> Versão Gratuita ({records.length}/1) - Ativar
-                        </button>
-                     ) : (
-                        <div className="flex items-center gap-1 text-[10px] md:text-xs bg-green-600 text-white font-bold px-3 py-1 rounded-full opacity-90">
-                             <Unlock size={14} /> Licença Ativa
-                        </div>
-                     )}
+                  <div className="flex items-center gap-2 flex-wrap justify-center">
+                     <button onClick={handleInstallClick} className="flex items-center gap-1 text-[10px] md:text-xs bg-blue-800 hover:bg-blue-700 text-white border border-blue-500 px-3 py-1.5 rounded-full transition shadow-sm"><Icons.Smartphone size={14} /> Instalar App</button>
+                     {!licenseStatus.valid ? ( <button onClick={() => setShowLicenseModal(true)} className="flex items-center gap-1 text-[10px] md:text-xs bg-red-500 hover:bg-red-600 text-white font-bold px-3 py-1.5 rounded-full animate-pulse transition shadow-sm border border-red-400"><Icons.Lock size={14} /> Bloqueado - Ativar Licença</button> ) : ( <div className={`flex items-center gap-1 text-[10px] md:text-xs px-3 py-1.5 rounded-full font-bold shadow-sm border ${licenseStatus.trial ? 'bg-yellow-500 text-black border-yellow-400' : 'bg-green-600 text-white border-green-400'}`}> {licenseStatus.trial ? <Icons.Clock size={14} /> : <Icons.ShieldCheck size={14} />} {licenseStatus.trial ? `Teste: ${licenseStatus.minutesLeft}m restantes` : `Licenciado (${licenseStatus.daysLeft} dias)`}</div> )}
                   </div>
                 </div>
               </header>
@@ -657,50 +678,44 @@
                 {view === 'list' && (
                   <div className="print:hidden space-y-6">
                     <div className="bg-gradient-to-r from-orange-50 to-orange-100 p-4 rounded-lg shadow-sm border border-orange-200">
-                        <div className="flex items-center gap-2 mb-3 text-orange-800"><Bell size={18} className="animate-pulse" /><h3 className="font-bold text-sm uppercase">Lembretes de Registro Pendente</h3></div>
-                        <div className="flex gap-2 mb-3">
-                            <input type="text" placeholder="Ex: Registrar conversa com mãe do Pedro..." className="flex-1 p-2 rounded border border-orange-300 text-sm focus:ring-2 focus:ring-orange-400 outline-none" value={newReminderText} onChange={(e) => setNewReminderText(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && addReminder()} />
-                            <button onClick={addReminder} className="bg-orange-600 text-white px-4 py-2 rounded text-sm font-bold hover:bg-orange-700">Adicionar</button>
-                        </div>
-                        {reminders.length > 0 && <div className="grid gap-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">{reminders.map(rem => (<div key={rem.id} className="bg-white p-3 rounded shadow-sm border border-orange-200 flex justify-between items-center animate-in"><span className="text-sm text-gray-700 font-medium">{rem.text}</span><button onClick={() => completeReminder(rem.id)} className="text-green-600 hover:text-green-800 flex items-center gap-1 text-xs font-bold border border-green-200 bg-green-50 px-2 py-1 rounded hover:bg-green-100"><CheckCircle size={14} /> Já Registrado</button></div>))}</div>}
+                        <div className="flex items-center gap-2 mb-3 text-orange-800"><Icons.Bell size={18} className="animate-pulse" /><h3 className="font-bold text-sm uppercase">Lembretes</h3></div>
+                        <div className="flex gap-2 mb-3"><input type="text" placeholder="Ex: Registrar conversa..." className="flex-1 p-2 rounded border border-orange-300 text-sm focus:ring-2 focus:ring-orange-400 outline-none" value={newReminderText} onChange={(e) => setNewReminderText(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && addReminder()} /><button onClick={addReminder} className="bg-orange-600 text-white px-4 py-2 rounded text-sm font-bold hover:bg-orange-700">Add</button></div>
+                        {reminders.length > 0 && <div className="grid gap-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">{reminders.map(rem => (<div key={rem.id} className="bg-white p-3 rounded shadow-sm border border-orange-200 flex justify-between items-center animate-in"><span className="text-sm text-gray-700 font-medium">{rem.text}</span><button onClick={() => completeReminder(rem.id)} className="text-green-600 hover:text-green-800 flex items-center gap-1 text-xs font-bold border border-green-200 bg-green-50 px-2 py-1 rounded hover:bg-green-100"><Icons.CheckCircle size={14} /></button></div>))}</div>}
                     </div>
 
                     <div className="bg-white p-4 rounded-lg shadow space-y-4 transition-all">
                       <div className="flex justify-between items-center cursor-pointer" onClick={() => setShowFilters(!showFilters)}>
-                         <div className="flex items-center gap-2 text-gray-700 font-bold"><Filter size={20} /> Filtros de Pesquisa Avançada {activeFiltersCount > 0 && <span className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">{activeFiltersCount} ativos</span>}</div>
-                         <div className="flex gap-2">{activeFiltersCount > 0 && (<button onClick={(e) => { e.stopPropagation(); clearFilters(); }} className="text-xs text-red-500 hover:underline px-2">Limpar Filtros</button>)}<button className="text-gray-500 hover:text-blue-600">{showFilters ? <ChevronUp size={20} /> : <ChevronDown size={20} />}</button></div>
+                         <div className="flex items-center gap-2 text-gray-700 font-bold"><Icons.Filter size={20} /> Filtros {activeFiltersCount > 0 && <span className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">{activeFiltersCount}</span>}</div>
+                         <div className="flex gap-2">{activeFiltersCount > 0 && (<button onClick={(e) => { e.stopPropagation(); clearFilters(); }} className="text-xs text-red-500 hover:underline px-2">Limpar</button>)}<button className="text-gray-500 hover:text-blue-600">{showFilters ? <Icons.ChevronUp size={20} /> : <Icons.ChevronDown size={20} />}</button></div>
                       </div>
                       <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 border-t pt-4 ${showFilters ? 'block' : 'hidden md:grid'}`}>
-                         <div><label className="text-xs font-semibold text-gray-500 mb-1 block">Nome do Aluno</label><div className="relative"><Search className="absolute left-2 top-2.5 text-gray-400" size={16} /><input type="text" className="w-full pl-8 pr-2 py-2 border rounded bg-gray-50 text-sm" placeholder="Buscar aluno..." value={filters.aluno} onChange={(e) => setFilters({...filters, aluno: e.target.value})} /></div></div>
-                         <div className="grid grid-cols-3 gap-2 col-span-1 md:col-span-2 lg:col-span-1 bg-gray-50 p-2 rounded border"><div className="col-span-3"><label className="text-xs font-bold text-gray-600 mb-1 block flex items-center gap-1"><GraduationCap size={12}/> Filtros da Turma</label></div><div className="col-span-3"><select className="w-full px-2 py-1 border rounded text-xs bg-white" value={filters.nivelEnsino} onChange={(e) => setFilters({...filters, nivelEnsino: e.target.value})}><option value="">Nível (Todos)</option>{NIVEIS_ENSINO.map(n => <option key={n} value={n}>{n}</option>)}</select></div><div><input type="number" className="w-full px-2 py-1 border rounded text-xs" placeholder="Ano" value={filters.anoTurma} onChange={(e) => setFilters({...filters, anoTurma: e.target.value})} /></div><div className="col-span-2"><input type="text" className="w-full px-2 py-1 border rounded text-xs uppercase" placeholder="Letra" maxLength={1} value={filters.letraTurma} onChange={(e) => setFilters({...filters, letraTurma: e.target.value.toUpperCase()})} /></div></div>
+                         <div><label className="text-xs font-semibold text-gray-500 mb-1 block">Aluno</label><div className="relative"><Icons.Search className="absolute left-2 top-2.5 text-gray-400" size={16} /><input type="text" className="w-full pl-8 pr-2 py-2 border rounded bg-gray-50 text-sm" placeholder="Buscar..." value={filters.aluno} onChange={(e) => setFilters({...filters, aluno: e.target.value})} /></div></div>
+                         <div className="grid grid-cols-3 gap-2 col-span-1 md:col-span-2 lg:col-span-1 bg-gray-50 p-2 rounded border"><div className="col-span-3"><label className="text-xs font-bold text-gray-600 mb-1 block flex items-center gap-1"><Icons.GraduationCap size={12}/> Filtros da Turma</label></div><div className="col-span-3"><select className="w-full px-2 py-1 border rounded text-xs bg-white" value={filters.nivelEnsino} onChange={(e) => setFilters({...filters, nivelEnsino: e.target.value})}><option value="">Nível (Todos)</option>{NIVEIS_ENSINO.map(n => <option key={n} value={n}>{n}</option>)}</select></div><div><input type="number" className="w-full px-2 py-1 border rounded text-xs" placeholder="Ano" value={filters.anoTurma} onChange={(e) => setFilters({...filters, anoTurma: e.target.value})} /></div><div className="col-span-2"><input type="text" className="w-full px-2 py-1 border rounded text-xs uppercase" placeholder="Letra" maxLength={1} value={filters.letraTurma} onChange={(e) => setFilters({...filters, letraTurma: e.target.value.toUpperCase()})} /></div></div>
                          <div className="grid grid-cols-2 gap-2"><div><label className="text-xs font-semibold text-gray-500 mb-1 block">De</label><input type="date" className="w-full px-2 py-2 border rounded bg-gray-50 text-sm" value={filters.dataInicio} onChange={(e) => setFilters({...filters, dataInicio: e.target.value})} /></div><div><label className="text-xs font-semibold text-gray-500 mb-1 block">Até</label><input type="date" className="w-full px-2 py-2 border rounded bg-gray-50 text-sm" value={filters.dataFim} onChange={(e) => setFilters({...filters, dataFim: e.target.value})} /></div></div>
-                         <div><label className="text-xs font-semibold text-gray-500 mb-1 block">Conteúdo</label><input type="text" className="w-full px-2 py-2 border rounded bg-gray-50 text-sm" placeholder="Palavras no texto..." value={filters.conteudo} onChange={(e) => setFilters({...filters, conteudo: e.target.value})} /></div>
-                         <div className="grid grid-cols-2 gap-2"><div><label className="text-xs font-semibold text-gray-500 mb-1 block">Modalidade</label><select className="w-full px-2 py-2 border rounded bg-gray-50 text-sm" value={filters.modalidade} onChange={(e) => setFilters({...filters, modalidade: e.target.value})}><option value="">Todas</option><option value="Presencial">Presencial</option><option value="Online">Online</option></select></div><div><label className="text-xs font-semibold text-gray-500 mb-1 block">Local</label><input type="text" className="w-full px-2 py-2 border rounded bg-gray-50 text-sm" placeholder="Buscar local..." value={filters.local} onChange={(e) => setFilters({...filters, local: e.target.value})} /></div></div>
-                         <div><label className="text-xs font-semibold text-gray-500 mb-1 block">Tipo de Registro</label><select className="w-full px-2 py-2 border rounded bg-gray-50 text-sm" value={filters.tipo} onChange={(e) => setFilters({...filters, tipo: e.target.value})}><option value="">Todos</option>{TIPOS_OCORRENCIA.filter(t => t !== 'Outros').map(t => <option key={t} value={t}>{t}</option>)}<option value="Outros">Outros</option></select></div>
+                         <div><label className="text-xs font-semibold text-gray-500 mb-1 block">Conteúdo</label><input type="text" className="w-full px-2 py-2 border rounded bg-gray-50 text-sm" placeholder="Palavras..." value={filters.conteudo} onChange={(e) => setFilters({...filters, conteudo: e.target.value})} /></div>
+                         <div className="grid grid-cols-2 gap-2"><div><label className="text-xs font-semibold text-gray-500 mb-1 block">Modalidade</label><select className="w-full px-2 py-2 border rounded bg-gray-50 text-sm" value={filters.modalidade} onChange={(e) => setFilters({...filters, modalidade: e.target.value})}><option value="">Todas</option><option value="Presencial">Presencial</option><option value="Online">Online</option></select></div><div><label className="text-xs font-semibold text-gray-500 mb-1 block">Local</label><input type="text" className="w-full px-2 py-2 border rounded bg-gray-50 text-sm" placeholder="Buscar..." value={filters.local} onChange={(e) => setFilters({...filters, local: e.target.value})} /></div></div>
+                         <div><label className="text-xs font-semibold text-gray-500 mb-1 block">Tipo</label><select className="w-full px-2 py-2 border rounded bg-gray-50 text-sm" value={filters.tipo} onChange={(e) => setFilters({...filters, tipo: e.target.value})}><option value="">Todos</option>{TIPOS_OCORRENCIA.filter(t => t !== 'Outros').map(t => <option key={t} value={t}>{t}</option>)}<option value="Outros">Outros</option></select></div>
                          <div><label className="text-xs font-semibold text-gray-500 mb-1 block">Período</label><select className="w-full px-2 py-2 border rounded bg-gray-50 text-sm" value={filters.periodo} onChange={(e) => setFilters({...filters, periodo: e.target.value})}><option value="">Todos</option><optgroup label="Bimestres">{BIMESTRES.map(b => <option key={b} value={b}>{b}</option>)}</optgroup><optgroup label="Semestres">{SEMESTRES.map(s => <option key={s} value={s}>{s}</option>)}</optgroup></select></div>
                          <div className="flex items-end lg:col-span-3">
-                            <button 
-                                onClick={() => checkLimitAndProceed(() => { resetForm(); setView('create'); })} 
-                                className={`w-full text-white py-2 rounded-lg flex items-center justify-center gap-2 font-medium transition shadow-md whitespace-nowrap ${!isLicensed && records.length >= 1 ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
-                            >
-                                {(!isLicensed && records.length >= 1) ? <Lock size={20} /> : <Plus size={20} />} 
-                                {(!isLicensed && records.length >= 1) ? 'Limite Atingido (Versão Gratuita)' : 'Novo Registro'}
+                            <button onClick={() => checkPermission(() => { resetForm(); setView('create'); })} className={`w-full text-white py-2 rounded-lg flex items-center justify-center gap-2 font-medium transition shadow-md whitespace-nowrap ${!licenseStatus.valid ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                                {!licenseStatus.valid ? <Icons.Lock size={20} /> : <Icons.Plus size={20} />} 
+                                {!licenseStatus.valid ? 'Modo Visualização (Licença Requerida)' : 'Novo Registro'}
                             </button>
                          </div>
                       </div>
                     </div>
 
-                    <div className="flex gap-2 overflow-x-auto pb-2"><button onClick={handleExport} className="whitespace-nowrap flex items-center gap-1 text-sm bg-green-100 text-green-800 px-3 py-1 rounded hover:bg-green-200 border border-green-300"><Download size={14} /> Fazer Backup</button><label className="whitespace-nowrap flex items-center gap-1 text-sm bg-orange-100 text-orange-800 px-3 py-1 rounded hover:bg-orange-200 border border-orange-300 cursor-pointer"><Upload size={14} /> Importar Dados<input type="file" accept=".json" className="hidden" onChange={handleImport} /></label></div>
+                    <div className="flex gap-2 overflow-x-auto pb-2"><button onClick={handleExport} className="whitespace-nowrap flex items-center gap-1 text-sm bg-green-100 text-green-800 px-3 py-1 rounded hover:bg-green-200 border border-green-300"><Icons.Download size={14} /> Fazer Backup</button><label className="whitespace-nowrap flex items-center gap-1 text-sm bg-orange-100 text-orange-800 px-3 py-1 rounded hover:bg-orange-200 border border-orange-300 cursor-pointer"><Icons.Upload size={14} /> Importar Dados<input type="file" accept=".json" className="hidden" onChange={handleImport} /></label></div>
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                       {filteredRecords.map(record => (
                         <div key={record.id} onClick={() => { setSelectedRecord(record); setView('details'); }} className="bg-white p-5 rounded-lg shadow hover:shadow-lg transition cursor-pointer border-l-4 border-l-blue-500 group relative overflow-hidden">
-                           <button onClick={(e) => handleEditRecord(record, e)} className="absolute top-2 right-2 p-2 bg-white rounded-full shadow opacity-0 group-hover:opacity-100 transition text-gray-500 hover:text-blue-600 z-20" title="Editar registro"><Edit size={16} /></button>
-                           <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition pointer-events-none"><FileText size={64} /></div>
+                           <button onClick={(e) => handleEditRecord(record, e)} className="absolute top-2 right-2 p-2 bg-white rounded-full shadow opacity-0 group-hover:opacity-100 transition text-gray-500 hover:text-blue-600 z-20"><Icons.Edit size={16} /></button>
+                           <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition pointer-events-none"><Icons.FileText size={64} /></div>
                           <div className="flex justify-between items-start mb-2 relative z-10 pr-8"><span className={`text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider ${record.modalidade === 'Online' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>{record.modalidade || 'Presencial'}</span><span className="text-gray-400 text-xs">{new Date(record.createdAt).toLocaleDateString()}</span></div>
                           <h3 className="font-bold text-lg mb-1 group-hover:text-blue-600 truncate relative z-10">{record.aluno}</h3>
-                          <div className="flex gap-2 mb-2 flex-wrap"><span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded border border-yellow-200 font-bold">{formatTurma(record)}</span><span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded border">{record.periodo || '1º Bimestre'}</span><span className="text-xs font-medium uppercase text-gray-500 truncate max-w-[150px]">{record.tipo}</span></div>
+                          <div className="flex gap-2 mb-2 flex-wrap"><span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded border border-yellow-200 font-bold">{formatTurma(record)}</span><span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded border">{record.periodo}</span><span className="text-xs font-medium uppercase text-gray-500 truncate max-w-[150px]">{record.tipo}</span></div>
                           <p className="text-sm text-gray-600 mb-3 line-clamp-2 relative z-10">{record.descricao}</p>
-                          <div className="flex items-center gap-4 text-xs text-gray-500 border-t pt-3 relative z-10"><div className="flex items-center gap-1"><Users size={14} /> {record.assinaturas.length}</div><div className="flex items-center gap-1"><Calendar size={14} /> {formatDateTime(record.data + 'T' + record.hora)}</div></div>
+                          <div className="flex items-center gap-4 text-xs text-gray-500 border-t pt-3 relative z-10"><div className="flex items-center gap-1"><Icons.Users size={14} /> {record.assinaturas.length}</div><div className="flex items-center gap-1"><Icons.Calendar size={14} /> {formatDateTime(record.data + 'T' + record.hora)}</div></div>
                         </div>
                       ))}
                       {filteredRecords.length === 0 && <div className="col-span-full text-center py-10 text-gray-500"><p className="text-lg font-medium">Nenhum registro encontrado.</p></div>}
@@ -710,13 +725,12 @@
 
                 {view === 'create' && (
                   <div className="bg-white rounded-lg shadow-lg overflow-hidden print:hidden">
-                    <div className="bg-gray-50 p-4 border-b flex justify-between items-center sticky top-0 z-30"><h2 className="text-lg font-bold flex items-center gap-2">{editingId ? <Edit size={20} /> : <FileText size={20} />} {editingId ? 'Editar Ocorrido' : 'Novo Ocorrido'}</h2><button onClick={() => { setView('list'); resetForm(); }} className="text-gray-500 hover:text-gray-700">Cancelar</button></div>
+                    <div className="bg-gray-50 p-4 border-b flex justify-between items-center sticky top-0 z-30"><h2 className="text-lg font-bold flex items-center gap-2">{editingId ? <Icons.Edit size={20} /> : <Icons.FileText size={20} />} {editingId ? 'Editar Ocorrido' : 'Novo Ocorrido'}</h2><button onClick={() => { setView('list'); resetForm(); }} className="text-gray-500 hover:text-gray-700">Cancelar</button></div>
                     <div className="p-6 space-y-6">
-                      {/* ... Campos de formulário mantidos exatamente iguais ... */}
                       <div className="grid md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <div className="md:col-span-2 grid md:grid-cols-2 gap-4">
                             <div><label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Registro</label><select className="w-full p-2 border rounded bg-white mb-2" value={formData.tipoSelecionado} onChange={e => setFormData({...formData, tipoSelecionado: e.target.value})}>{TIPOS_OCORRENCIA.map(t => <option key={t} value={t}>{t}</option>)}</select>{formData.tipoSelecionado === 'Outros' && (<input type="text" className="w-full p-2 border border-blue-300 rounded bg-white animate-in" placeholder="Especifique o tipo" value={formData.tipoOutro} onChange={e => setFormData({...formData, tipoOutro: e.target.value})} autoFocus />)}</div>
-                            <div><label className="block text-sm font-medium text-gray-700 mb-1">Modalidade</label><div className="flex gap-4 mt-2"><label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="modalidade" value="Presencial" checked={formData.modalidade === 'Presencial'} onChange={e => setFormData({...formData, modalidade: e.target.value})} className="w-4 h-4 text-blue-600" /><span className="flex items-center gap-1"><MapPin size={16} /> Presencial</span></label><label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="modalidade" value="Online" checked={formData.modalidade === 'Online'} onChange={e => setFormData({...formData, modalidade: e.target.value})} className="w-4 h-4 text-purple-600" /><span className="flex items-center gap-1"><Monitor size={16} /> Online</span></label></div></div>
+                            <div><label className="block text-sm font-medium text-gray-700 mb-1">Modalidade</label><div className="flex gap-4 mt-2"><label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="modalidade" value="Presencial" checked={formData.modalidade === 'Presencial'} onChange={e => setFormData({...formData, modalidade: e.target.value})} className="w-4 h-4 text-blue-600" /><span className="flex items-center gap-1"><Icons.MapPin size={16} /> Presencial</span></label><label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="modalidade" value="Online" checked={formData.modalidade === 'Online'} onChange={e => setFormData({...formData, modalidade: e.target.value})} className="w-4 h-4 text-purple-600" /><span className="flex items-center gap-1"><Icons.Monitor size={16} /> Online</span></label></div></div>
                         </div>
                         <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-4 gap-4 pt-2 border-t border-gray-200">
                             <div><label className="block text-sm font-medium text-gray-700 mb-1">Regime</label><div className="flex items-center gap-2 mb-2 bg-white rounded p-1 border"><button onClick={() => setFormData({...formData, regime: 'Bimestre', periodo: BIMESTRES[0]})} className={`flex-1 text-xs py-1 rounded ${formData.regime === 'Bimestre' ? 'bg-blue-100 text-blue-700 font-bold' : 'text-gray-500'}`}>Bimestre</button><button onClick={() => setFormData({...formData, regime: 'Semestre', periodo: SEMESTRES[0]})} className={`flex-1 text-xs py-1 rounded ${formData.regime === 'Semestre' ? 'bg-blue-100 text-blue-700 font-bold' : 'text-gray-500'}`}>Semestre</button></div><select className="w-full p-2 border rounded bg-white" value={formData.periodo} onChange={e => setFormData({...formData, periodo: e.target.value})}><option value="">-- Não se aplica --</option>{(formData.regime === 'Bimestre' ? BIMESTRES : SEMESTRES).map(b => <option key={b} value={b}>{b}</option>)}</select></div>
@@ -726,32 +740,69 @@
                         </div>
                       </div>
 
-                      <div className="border-t pt-4"><h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2"><User size={18} /> Participantes</h3>
+                      <div className="border-t pt-4"><h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2"><Icons.User size={18} /> Participantes</h3>
                         <div className="grid md:grid-cols-2 gap-4">
-                          <div><label className="block text-sm font-medium text-gray-700 mb-1">Nome do Aluno *</label><input type="text" className="w-full p-2 border rounded border-blue-200" placeholder="Nome completo" value={formData.aluno} onChange={e => setFormData({...formData, aluno: e.target.value})} /></div>
-                          <div className="bg-blue-50 p-2 rounded border border-blue-100"><label className="block text-xs font-bold text-blue-800 mb-2 flex items-center gap-1"><GraduationCap size={14}/> Detalhes da Turma</label><div className="grid grid-cols-2 gap-2 mb-2"><select className="col-span-2 w-full p-2 border rounded text-sm bg-white" value={formData.nivelEnsino} onChange={e => setFormData({...formData, nivelEnsino: e.target.value})}>{NIVEIS_ENSINO.map(n => <option key={n} value={n}>{n}</option>)}</select><input type="number" className="w-full p-2 border rounded text-sm" placeholder="Ano (Nº)" value={formData.anoTurma} onChange={e => setFormData({...formData, anoTurma: e.target.value})} /><input type="text" className="w-full p-2 border rounded text-sm uppercase" placeholder="Letra" maxLength={1} value={formData.letraTurma} onChange={e => setFormData({...formData, letraTurma: e.target.value.toUpperCase()})} /></div></div>
+                          <div><label className="block text-sm font-medium text-gray-700 mb-1">Nome do Aluno (Opcional)</label><input type="text" className="w-full p-2 border rounded border-blue-200" placeholder="Nome completo" value={formData.aluno} onChange={e => setFormData({...formData, aluno: e.target.value})} /></div>
+                          <div className="bg-blue-50 p-2 rounded border border-blue-100"><label className="block text-xs font-bold text-blue-800 mb-2 flex items-center gap-1"><Icons.GraduationCap size={14}/> Detalhes da Turma</label><div className="grid grid-cols-2 gap-2 mb-2"><select className="col-span-2 w-full p-2 border rounded text-sm bg-white" value={formData.nivelEnsino} onChange={e => setFormData({...formData, nivelEnsino: e.target.value})}>{NIVEIS_ENSINO.map(n => <option key={n} value={n}>{n}</option>)}</select><input type="number" className="w-full p-2 border rounded text-sm" placeholder="Ano (Nº)" value={formData.anoTurma} onChange={e => setFormData({...formData, anoTurma: e.target.value})} /><input type="text" className="w-full p-2 border rounded text-sm uppercase" placeholder="Letra" maxLength={1} value={formData.letraTurma} onChange={e => setFormData({...formData, letraTurma: e.target.value.toUpperCase()})} /></div></div>
                           <div className="md:col-span-2"><label className="block text-sm font-medium text-gray-700 mb-1">Outros Presentes</label><input type="text" className="w-full p-2 border rounded" placeholder="Professores, Coordenadores..." value={formData.outrosPresentes} onChange={e => setFormData({...formData, outrosPresentes: e.target.value})} /></div>
                         </div>
                       </div>
 
-                      <div className="border-t pt-4"><h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2"><FileText size={18} /> Detalhes</h3>
+                      <div className="border-t pt-4"><h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2"><Icons.FileText size={18} /> Detalhes</h3>
                         <div className="space-y-4">
-                          <div><label className="block text-sm font-medium text-gray-700 mb-1">Descrição do Ocorrido *</label><textarea className="w-full p-3 border rounded h-32 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Descreva detalhadamente..." value={formData.descricao} onChange={e => setFormData({...formData, descricao: e.target.value})}></textarea></div>
+                          <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Descrição do Ocorrido *</label>
+                              <textarea className="w-full p-3 border rounded h-32 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Descreva detalhadamente ou use o microfone para gravar e ditar..." value={formData.descricao} onChange={e => setFormData({...formData, descricao: e.target.value})}></textarea>
+                              
+                              {/* NOVO: Gravador com Consentimento */}
+                              <AudioRecorder onSaveAudio={handleAudioRecorded} />
+
+                              <div className="flex gap-2 mt-4 items-start flex-wrap">
+                                  {/* Botões de Upload Manuais */}
+                                  <label className="cursor-pointer bg-white hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2 border border-gray-300 shadow-sm transition">
+                                      <Icons.ImagePlus size={16} className="text-blue-600" /> Upload Foto
+                                      <input type="file" accept="image/*" className="hidden" onChange={(e) => handleAttachmentUpload(e, 'image')} />
+                                  </label>
+                                  <label className="cursor-pointer bg-white hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2 border border-gray-300 shadow-sm transition">
+                                      <Icons.FileAudio size={16} className="text-orange-500" /> Upload Arquivo Áudio
+                                      <input type="file" accept="audio/*" className="hidden" onChange={(e) => handleAttachmentUpload(e, 'audio')} />
+                                  </label>
+                              </div>
+
+                              {formData.anexos && formData.anexos.length > 0 && (
+                                  <div className="mt-3 space-y-2 bg-gray-50 p-2 rounded border border-gray-200">
+                                      {formData.anexos.map((att) => (
+                                          <div key={att.id} className="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-2 rounded shadow-sm border gap-2">
+                                              <div className="flex items-center gap-2 overflow-hidden">
+                                                  {att.type === 'image' ? <Icons.ImageIcon size={16} className="text-blue-500" /> : <Icons.Mic size={16} className="text-red-500" />}
+                                                  <span className="text-xs truncate max-w-[150px] font-medium">{att.name}</span>
+                                              </div>
+                                              
+                                              {att.type === 'audio' && (
+                                                  <audio controls src={att.content} className="h-8 w-full sm:w-48" />
+                                              )}
+
+                                              <button onClick={() => removeAttachment(att.id)} className="text-red-500 hover:text-red-700"><Icons.Trash2 size={16} /></button>
+                                          </div>
+                                      ))}
+                                  </div>
+                              )}
+                          </div>
                           <div><label className="block text-sm font-medium text-gray-700 mb-1">Providências</label><textarea className="w-full p-3 border rounded h-24 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Encaminhamentos..." value={formData.providencias} onChange={e => setFormData({...formData, providencias: e.target.value})}></textarea></div>
                         </div>
                       </div>
 
-                      <div className="border-t pt-4 bg-blue-50 -mx-6 px-6 pb-6"><h3 className="font-semibold text-gray-800 mb-3 mt-4 flex items-center gap-2"><PenTool size={18} /> Assinaturas</h3>
+                      <div className="border-t pt-4 bg-blue-50 -mx-6 px-6 pb-6"><h3 className="font-semibold text-gray-800 mb-3 mt-4 flex items-center gap-2"><Icons.PenTool size={18} /> Assinaturas</h3>
                         <div className="grid md:grid-cols-2 gap-6">
-                            <div className="space-y-3"><p className="text-xs font-bold text-gray-500 uppercase">Assinatura do Aluno</p><button onClick={() => openSignaturePad(formData.aluno || 'Aluno', 'Aluno')} className="w-full bg-white border border-blue-300 text-blue-700 px-4 py-3 rounded-lg shadow-sm hover:bg-blue-50 text-sm flex items-center justify-center gap-2 font-medium"><PenTool size={16} /> Assinar como Aluno</button>
-                                <div className="mt-4"><p className="text-xs font-bold text-gray-500 uppercase mb-2">Registro por imagem</p><div className="grid grid-cols-2 gap-2"><label className="w-full bg-white border border-gray-300 text-gray-700 px-2 py-3 rounded-lg shadow-sm hover:bg-gray-50 text-sm flex flex-col items-center justify-center gap-1 font-medium cursor-pointer text-center"><Camera size={20} /> <span>Câmera</span><input type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhotoUpload} /></label><label className="w-full bg-white border border-gray-300 text-gray-700 px-2 py-3 rounded-lg shadow-sm hover:bg-gray-50 text-sm flex flex-col items-center justify-center gap-1 font-medium cursor-pointer text-center"><ImageIcon size={20} /> <span>Galeria</span><input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} /></label></div></div>
+                            <div className="space-y-3"><p className="text-xs font-bold text-gray-500 uppercase">Assinatura do Aluno</p><button onClick={() => openSignaturePad(formData.aluno || 'Aluno', 'Aluno')} className="w-full bg-white border border-blue-300 text-blue-700 px-4 py-3 rounded-lg shadow-sm hover:bg-blue-50 text-sm flex items-center justify-center gap-2 font-medium"><Icons.PenTool size={16} /> Assinar como Aluno</button>
+                                <div className="mt-4"><p className="text-xs font-bold text-gray-500 uppercase mb-2">Registro por imagem</p><div className="grid grid-cols-2 gap-2"><label className="w-full bg-white border border-gray-300 text-gray-700 px-2 py-3 rounded-lg shadow-sm hover:bg-gray-50 text-sm flex flex-col items-center justify-center gap-1 font-medium cursor-pointer text-center"><Icons.Camera size={20} /> <span>Câmera</span><input type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhotoUpload} /></label><label className="w-full bg-white border border-gray-300 text-gray-700 px-2 py-3 rounded-lg shadow-sm hover:bg-gray-50 text-sm flex flex-col items-center justify-center gap-1 font-medium cursor-pointer text-center"><Icons.ImageIcon size={20} /> <span>Galeria</span><input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} /></label></div></div>
                             </div>
-                            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm"><p className="text-xs font-bold text-gray-500 uppercase mb-2">Outros Participantes</p><div className="space-y-2"><input type="text" placeholder="Nome" className="w-full p-2 border rounded text-sm" value={customSignerName} onChange={e => setCustomSignerName(e.target.value)} /><input type="text" placeholder="Cargo/Função" className="w-full p-2 border rounded text-sm" value={customSignerRole} onChange={e => setCustomSignerRole(e.target.value)} /><button onClick={() => openSignaturePad(customSignerName, customSignerRole)} disabled={!customSignerName || !customSignerRole} className="w-full bg-gray-800 text-white px-4 py-2 rounded disabled:opacity-50 hover:bg-gray-900 text-sm flex items-center justify-center gap-2"><PenTool size={14} /> Coletar Assinatura</button></div></div>
+                            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm"><p className="text-xs font-bold text-gray-500 uppercase mb-2">Outros Participantes</p><div className="space-y-2"><input type="text" placeholder="Nome" className="w-full p-2 border rounded text-sm" value={customSignerName} onChange={e => setCustomSignerName(e.target.value)} /><input type="text" placeholder="Cargo/Função" className="w-full p-2 border rounded text-sm" value={customSignerRole} onChange={e => setCustomSignerRole(e.target.value)} /><button onClick={() => openSignaturePad(customSignerName, customSignerRole)} disabled={!customSignerName || !customSignerRole} className="w-full bg-gray-800 text-white px-4 py-2 rounded disabled:opacity-50 hover:bg-gray-900 text-sm flex items-center justify-center gap-2"><Icons.PenTool size={14} /> Coletar Assinatura</button></div></div>
                         </div>
-                        {formData.assinaturas.length > 0 && (<div className="mt-6"><p className="text-xs font-bold text-gray-500 uppercase mb-2">Itens Coletados ({formData.assinaturas.length})</p><div className="grid grid-cols-2 md:grid-cols-4 gap-4">{formData.assinaturas.map((sig) => (<div key={sig.id} className="bg-white p-2 rounded shadow border relative group"><button onClick={() => removeSignature(sig.id)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow hover:bg-red-600 z-10"><X size={12} /></button><div className="h-24 bg-gray-50 flex items-center justify-center mb-2 overflow-hidden rounded relative"><img src={sig.imagem} alt="Assinatura" className="max-h-full max-w-full object-contain" />{sig.tipo === 'foto' && (<div className="absolute bottom-0 w-full bg-black bg-opacity-60 text-white text-[9px] text-center py-0.5">{formatDateTime(formData.data + 'T' + formData.hora)}</div>)}</div><div className="text-xs font-bold truncate">{sig.nome}</div><div className="text-xs text-gray-500 truncate">{sig.cargo}</div></div>))}</div></div>)}
+                        {formData.assinaturas.length > 0 && (<div className="mt-6"><p className="text-xs font-bold text-gray-500 uppercase mb-2">Itens Coletados ({formData.assinaturas.length})</p><div className="grid grid-cols-2 md:grid-cols-4 gap-4">{formData.assinaturas.map((sig) => (<div key={sig.id} className="bg-white p-2 rounded shadow border relative group"><button onClick={() => removeSignature(sig.id)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow hover:bg-red-600 z-10"><Icons.X size={12} /></button><div className="h-24 bg-gray-50 flex items-center justify-center mb-2 overflow-hidden rounded relative"><img src={sig.imagem} alt="Assinatura" className="max-h-full max-w-full object-contain" />{sig.tipo === 'foto' && (<div className="absolute bottom-0 w-full bg-black bg-opacity-60 text-white text-[9px] text-center py-0.5">{formatDateTime(formData.data + 'T' + formData.hora)}</div>)}</div><div className="text-xs font-bold truncate">{sig.nome}</div><div className="text-xs text-gray-500 truncate">{sig.cargo}</div></div>))}</div></div>)}
                       </div>
 
-                      <div className="flex justify-end gap-3 pt-4"><button onClick={() => { setView('list'); resetForm(); }} className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50">Cancelar</button><button onClick={handleSaveRecord} className={`px-6 py-3 text-white rounded-lg font-bold shadow-lg flex items-center gap-2 ${editingId ? 'bg-orange-600 hover:bg-orange-700' : 'bg-blue-700 hover:bg-blue-800'}`}>{editingId ? <Edit size={20} /> : <Save size={20} />} {editingId ? 'Atualizar' : 'Salvar'}</button></div>
+                      <div className="flex justify-end gap-3 pt-4"><button onClick={() => { setView('list'); resetForm(); }} className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50">Cancelar</button><button onClick={handleSaveRecord} className={`px-6 py-3 text-white rounded-lg font-bold shadow-lg flex items-center gap-2 ${editingId ? 'bg-orange-600 hover:bg-orange-700' : 'bg-blue-700 hover:bg-blue-800'}`}>{editingId ? <Icons.Edit size={20} /> : <Icons.Save size={20} />} {editingId ? 'Atualizar' : 'Salvar'}</button></div>
                     </div>
                   </div>
                 )}
@@ -759,125 +810,96 @@
                 {view === 'details' && selectedRecord && (
                   <div className="bg-white rounded-lg shadow-xl print:shadow-none print:w-full max-w-4xl mx-auto print:m-0">
                     <div className="bg-gray-50 p-6 border-b print:bg-white print:border-b-0 print:p-0 print:mb-2">
-                      {/* Cabeçalho de Impressão Atualizado com Logo */}
                       <div className="hidden print:flex flex-col items-center mb-6 print:mb-2 border-b-2 border-gray-800 pb-4 print:pb-2">
-                        {schoolLogo && (
-                            <img src={schoolLogo} alt="Logo da Escola" className="h-24 print:h-16 w-auto object-contain mb-2 print:mb-1" />
-                        )}
-                        {schoolName && (
-                             <h1 className="text-2xl print:text-lg font-bold uppercase tracking-wide text-center">{schoolName}</h1>
-                        )}
+                        {schoolLogo && ( <img src={schoolLogo} alt="Logo" className="h-24 print:h-16 w-auto object-contain mb-2 print:mb-1" /> )}
+                        {schoolName && ( <h1 className="text-2xl print:text-lg font-bold uppercase tracking-wide text-center">{schoolName}</h1> )}
                         <div className="text-xs text-gray-500 mt-1 uppercase tracking-widest print:text-[10px]">Relatório de Ocorrência Escolar</div>
                       </div>
-                      
-                      <div className="flex justify-between items-start"><div><h2 className="text-2xl font-bold text-gray-800 mb-1 print:text-xl print:hidden">Registro de Ocorrido Escolar</h2><p className="text-sm text-gray-500 print:text-gray-700 print:text-xs">ID: #{selectedRecord.id.slice(-6)} • Gerado em {new Date().toLocaleDateString()}</p></div><div className="flex gap-2"><button onClick={(e) => handleEditRecord(selectedRecord, e)} className="text-gray-500 hover:text-blue-600 print:hidden bg-gray-200 p-2 rounded-full flex items-center gap-2 px-3"><Edit size={16} /> <span className="text-xs font-bold">Editar</span></button><button onClick={() => setView('list')} className="text-gray-500 hover:text-blue-600 print:hidden bg-gray-200 p-2 rounded-full"><X size={20} /></button></div></div>
+                      <div className="flex justify-between items-start"><div><h2 className="text-2xl font-bold text-gray-800 mb-1 print:text-xl print:hidden">Registro de Ocorrido Escolar</h2><p className="text-sm text-gray-500 print:text-gray-700 print:text-xs">ID: #{selectedRecord.id.slice(-6)} • Gerado em {new Date().toLocaleDateString()}</p></div><div className="flex gap-2"><button onClick={(e) => handleEditRecord(selectedRecord, e)} className="text-gray-500 hover:text-blue-600 print:hidden bg-gray-200 p-2 rounded-full flex items-center gap-2 px-3"><Icons.Edit size={16} /> <span className="text-xs font-bold">Editar</span></button><button onClick={() => setView('list')} className="text-gray-500 hover:text-blue-600 print:hidden bg-gray-200 p-2 rounded-full"><Icons.X size={20} /></button></div></div>
                     </div>
                     <div className="p-8 space-y-6 print:p-0 print:space-y-2 text-sm print:text-xs">
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-blue-50 p-4 rounded-lg print:bg-transparent print:border print:border-gray-300 print:p-1 print:gap-2">
                         <div><label className="block text-xs font-bold text-gray-500 uppercase print:text-[10px]">Data do Fato</label><div className="text-gray-900 font-medium">{formatDateTime(selectedRecord.data + 'T' + selectedRecord.hora).split(' ')[0]}</div></div>
-                        <div><label className="block text-xs font-bold text-gray-500 uppercase print:text-[10px]">Período</label><div className="text-gray-900 font-medium">{selectedRecord.periodo || 'N/A'}</div></div>
-                        <div><label className="block text-xs font-bold text-gray-500 uppercase print:text-[10px]">Modalidade</label><div className="text-gray-900 font-medium">{selectedRecord.modalidade || 'Presencial'}</div></div>
+                        <div><label className="block text-xs font-bold text-gray-500 uppercase print:text-[10px]">Período</label><div className="text-gray-900 font-medium">{selectedRecord.periodo}</div></div>
+                        <div><label className="block text-xs font-bold text-gray-500 uppercase print:text-[10px]">Modalidade</label><div className="text-gray-900 font-medium">{selectedRecord.modalidade}</div></div>
                         <div><label className="block text-xs font-bold text-gray-500 uppercase print:text-[10px]">Tipo</label><div className="text-blue-800 font-bold uppercase text-xs print:text-black">{selectedRecord.tipo}</div></div>
                       </div>
                       <div className="border border-gray-200 rounded p-4 print:border-gray-300 print:p-2 print:mb-1"><h3 className="text-base font-bold border-b pb-2 mb-3 print:mb-1 text-gray-800 uppercase print:text-xs print:pb-1">Participantes</h3><div className="grid grid-cols-1 gap-2 print:gap-0.5"><p><span className="font-bold w-24 inline-block print:w-16">Aluno:</span> {selectedRecord.aluno} {formatTurma(selectedRecord)}</p><p><span className="font-bold w-24 inline-block print:w-16">Local:</span> {selectedRecord.local}</p><p><span className="font-bold w-24 inline-block print:w-16">Presentes:</span> {selectedRecord.outrosPresentes || 'Apenas os assinantes.'}</p></div></div>
-                      <div><h3 className="text-base font-bold border-b border-gray-300 pb-1 mb-2 text-gray-800 uppercase print:text-xs print:mb-1">Descrição do Ocorrido</h3><div className="whitespace-pre-wrap text-gray-800 leading-relaxed text-justify min-h-[100px] print:min-h-0 border border-transparent print:border-none print:text-justify">{selectedRecord.descricao}</div></div>
+                      <div>
+                          <h3 className="text-base font-bold border-b border-gray-300 pb-1 mb-2 text-gray-800 uppercase print:text-xs print:mb-1">Descrição do Ocorrido</h3>
+                          <div className="whitespace-pre-wrap text-gray-800 leading-relaxed text-justify min-h-[100px] print:min-h-0 border border-transparent print:border-none print:text-justify">{selectedRecord.descricao}</div>
+                          
+                          {selectedRecord.anexos && selectedRecord.anexos.length > 0 && (
+                              <div className="mt-4 pt-4 border-t border-dashed">
+                                  <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">Anexos da Descrição</h4>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                      {selectedRecord.anexos.map(att => (
+                                          <div key={att.id} className="bg-gray-50 p-2 rounded border break-inside-avoid">
+                                              {att.type === 'image' ? (
+                                                  <div className="space-y-1">
+                                                      <img src={att.content} alt="Anexo" className="max-h-48 w-full object-contain rounded bg-white" />
+                                                      <p className="text-[10px] text-gray-500 truncate">{att.name}</p>
+                                                  </div>
+                                              ) : (
+                                                  <div className="flex flex-col gap-1">
+                                                      <div className="flex items-center gap-2 mb-1">
+                                                          <Icons.Mic size={16} className="text-red-500" />
+                                                          <span className="text-xs font-bold text-gray-700">Áudio Anexado</span>
+                                                      </div>
+                                                      <audio controls src={att.content} className="w-full h-8" />
+                                                  </div>
+                                              )}
+                                          </div>
+                                      ))}
+                                  </div>
+                              </div>
+                          )}
+                      </div>
                       {selectedRecord.providencias && (<div><h3 className="text-base font-bold border-b border-gray-300 pb-1 mb-2 text-gray-800 uppercase print:text-xs print:mb-1">Providências / Encaminhamentos</h3><div className="whitespace-pre-wrap text-gray-800 leading-relaxed text-justify min-h-[60px] print:min-h-0 border border-transparent print:border-none print:text-justify">{selectedRecord.providencias}</div></div>)}
                       <div className="pt-4 break-inside-avoid print:pt-2"><h3 className="text-base font-bold border-b border-gray-800 pb-1 mb-6 text-gray-800 uppercase print:text-xs print:mb-2 print:pb-1">Assinaturas e Comprovações</h3>
                         {selectedRecord.assinaturas.length === 0 ? (<p className="text-gray-400 italic text-center py-4 print:py-2">Nenhuma assinatura digital coletada.</p>) : (<div className="grid grid-cols-2 md:grid-cols-3 gap-y-8 gap-x-4 print:gap-y-4 print:gap-x-2">{selectedRecord.assinaturas.map(sig => (<div key={sig.id} className="flex flex-col items-center break-inside-avoid"><div className="h-28 w-full border-b border-gray-800 mb-1 flex items-end justify-center pb-1 relative print:h-16"><img src={sig.imagem} className="max-h-24 max-w-full object-contain print:max-h-14" alt={`Assinatura`} /></div><p className="font-bold text-sm text-center leading-tight print:text-xs">{sig.nome}</p><p className="text-xs text-gray-600 uppercase mb-1 print:text-[10px]">{sig.cargo}</p><p className="text-[9px] text-gray-400 print:text-[8px]">{sig.tipo === 'foto' ? 'Registro Fotográfico em ' : 'Assinado em '}{new Date(sig.timestamp).toLocaleDateString()} às {new Date(sig.timestamp).toLocaleTimeString()}</p>{sig.tipo === 'foto' && (<div className="mt-1 text-[10px] bg-gray-100 px-2 py-0.5 rounded border print:border-gray-300 print:text-[8px]">Ref. Data Ocorrido: {formatDateTime(selectedRecord.data + 'T' + selectedRecord.hora)}</div>)}</div>))}</div>)}
                       </div>
                       <div className="hidden print:block w-full text-center text-[10px] text-gray-400 border-t pt-2 mt-4 print:relative print:mt-4 print:border-t print:pt-1">Documento gerado digitalmente pelo App Registro de Ocorridos (Prof. Lucas Sebastião Barbosa Silva). Válido como registro escolar.<br /> Proteção de Dados: Conformidade com Lei nº 13.709/2018 (LGPD).</div>
-                      <div className="pt-8 border-t mt-8 print:hidden flex justify-between items-center bg-gray-50 -mx-8 px-8 pb-4 rounded-b-lg"><div className="text-xs text-gray-400">App desenvolvido por Prof. Lucas Sebastião</div><button onClick={initiatePrint} className="flex items-center gap-2 bg-gray-800 text-white px-6 py-3 rounded-lg shadow hover:bg-black transition font-bold"><Printer size={20} /> Imprimir PDF (A4)</button></div>
+                      <div className="pt-8 border-t mt-8 print:hidden flex justify-between items-center bg-gray-50 -mx-8 px-8 pb-4 rounded-b-lg"><div className="text-xs text-gray-400">App desenvolvido por Prof. Lucas Sebastião</div><button onClick={initiatePrint} className="flex items-center gap-2 bg-gray-800 text-white px-6 py-3 rounded-lg shadow hover:bg-black transition font-bold"><Icons.Printer size={20} /> Imprimir PDF (A4)</button></div>
                     </div>
                   </div>
                 )}
               </main>
 
               <footer className="bg-slate-100 border-t p-6 text-center text-[10px] text-gray-500 print:hidden mt-auto space-y-4">
-                <div className="max-w-3xl mx-auto flex flex-col items-center gap-1 border-b border-gray-200 pb-4">
-                    <ShieldCheck size={16} className="text-gray-400 mb-1" />
-                    <p><strong>Proteção de Dados:</strong> Em conformidade com a <strong>Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018)</strong>.</p>
-                </div>
-                
+                <div className="max-w-3xl mx-auto flex flex-col items-center gap-1 border-b border-gray-200 pb-4"><Icons.ShieldCheck size={16} className="text-gray-400 mb-1" /><p><strong>Proteção de Dados:</strong> Em conformidade com a <strong>LGPD (Lei nº 13.709/2018)</strong>.</p></div>
                 <div className="max-w-4xl mx-auto text-gray-400 leading-relaxed text-[9px]">
                     <p className="font-bold mb-1">AVISO LEGAL DE DIREITOS AUTORAIS</p>
-                    <p className="mb-2">© 2025 Maria Jaqueline da Silva Pereira - CNPJ: 62.323.279/0001-00. Todos os direitos reservados.</p>
-                    <p>
-                        Este software é protegido pelas leis de propriedade intelectual e direitos autorais internacionais.
-                        É estritamente proibida a cópia, reprodução, redistribuição, engenharia reversa, descompilação ou modificação do código-fonte deste aplicativo, 
-                        total ou parcialmente, sem autorização prévia e expressa do detentor dos direitos. A violação destes termos sujeitará o infrator às sanções civis 
-                        e criminais previstas na Lei nº 9.610/98 (Lei de Direitos Autorais) e Lei nº 9.609/98 (Lei de Software).
-                    </p>
+                    <p className="mb-2">© 2025 Maria Jaqueline da Silva Pereira - CNPJ: 62.323.279/0001-00.</p>
+                    <p>Software protegido. Cópia, engenharia reversa ou distribuição não autorizada são proibidas (Lei nº 9.610/98 e 9.609/98).</p>
                 </div>
               </footer>
 
               {showPrintModal && (
                   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 print:hidden animate-in">
                       <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-                          <div className="flex justify-between items-center mb-4">
-                              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2"><Printer className="text-blue-600" /> Preparar Impressão</h3>
-                              <button onClick={() => setShowPrintModal(false)} className="text-gray-400 hover:text-red-500"><X size={20} /></button>
-                          </div>
-                          
+                          <div className="flex justify-between items-center mb-4"><h3 className="text-lg font-bold text-gray-800 flex items-center gap-2"><Icons.Printer className="text-blue-600" /> Preparar Impressão</h3><button onClick={() => setShowPrintModal(false)} className="text-gray-400 hover:text-red-500"><Icons.X size={20} /></button></div>
                           <div className="space-y-4">
-                              <div>
-                                  <label className="block text-sm font-medium text-gray-700 mb-2">Nome da Escola</label>
-                                  <div className="relative">
-                                      <School className="absolute left-3 top-3 text-gray-400" size={18} />
-                                      <input type="text" className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: Escola Municipal Joaquim Távora" value={tempSchoolName} onChange={(e) => setTempSchoolName(e.target.value)} autoFocus />
-                                  </div>
-                              </div>
-
-                              <div>
-                                  <label className="block text-sm font-medium text-gray-700 mb-2">Logo da Escola (Opcional)</label>
-                                  <div className="flex items-center gap-4">
-                                      <label className="cursor-pointer bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg shadow-sm hover:bg-gray-50 text-sm flex items-center gap-2 font-medium transition hover:border-blue-500">
-                                          <ImageIcon size={18} /> Escolher Imagem
-                                          <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
-                                      </label>
-                                      {tempSchoolLogo && (
-                                          <div className="h-14 w-14 border rounded bg-gray-50 flex items-center justify-center overflow-hidden relative group">
-                                              <img src={tempSchoolLogo} alt="Preview" className="h-full w-full object-contain" />
-                                              <button onClick={() => setTempSchoolLogo('')} className="absolute inset-0 bg-black bg-opacity-50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition" title="Remover Logo"><X size={16} /></button>
-                                          </div>
-                                      )}
-                                  </div>
-                                  <p className="text-[10px] text-gray-400 mt-1">A imagem será salva no navegador e exibida no topo do PDF.</p>
-                              </div>
+                              <div><label className="block text-sm font-medium text-gray-700 mb-2">Nome da Escola</label><div className="relative"><Icons.School className="absolute left-3 top-3 text-gray-400" size={18} /><input type="text" className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: Escola Municipal Joaquim Távora" value={tempSchoolName} onChange={(e) => setTempSchoolName(e.target.value)} autoFocus /></div></div>
+                              <div><label className="block text-sm font-medium text-gray-700 mb-2">Logo da Escola (Opcional)</label><div className="flex items-center gap-4"><label className="cursor-pointer bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg shadow-sm hover:bg-gray-50 text-sm flex items-center gap-2 font-medium transition hover:border-blue-500"><Icons.ImageIcon size={18} /> Escolher Imagem<input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} /></label>{tempSchoolLogo && (<div className="h-14 w-14 border rounded bg-gray-50 flex items-center justify-center overflow-hidden relative group"><img src={tempSchoolLogo} alt="Preview" className="h-full w-full object-contain" /><button onClick={() => setTempSchoolLogo('')} className="absolute inset-0 bg-black bg-opacity-50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition" title="Remover Logo"><Icons.X size={16} /></button></div>)}</div></div>
                           </div>
-
-                          <div className="flex justify-end gap-3 pt-4 border-t mt-6">
-                              <button onClick={() => setShowPrintModal(false)} className="px-4 py-2 border rounded text-gray-600 hover:bg-gray-50 font-medium">Cancelar</button>
-                              <button onClick={confirmPrint} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-bold shadow flex items-center gap-2">
-                                  <Printer size={16} /> Confirmar e Imprimir
-                              </button>
-                          </div>
+                          <div className="flex justify-end gap-3 pt-4 border-t mt-6"><button onClick={() => setShowPrintModal(false)} className="px-4 py-2 border rounded text-gray-600 hover:bg-gray-50 font-medium">Cancelar</button><button onClick={confirmPrint} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-bold shadow flex items-center gap-2"><Icons.Printer size={16} /> Confirmar</button></div>
                       </div>
                   </div>
               )}
               {showSignaturePad && (<SignaturePad label={`${currentSigner.role} - ${currentSigner.name}`} onSave={handleSignatureSave} onCancel={() => setShowSignaturePad(false)} />)}
-              {/* MODAL DE LICENÇA */}
-              {showLicenseModal && (<LicenseModal deviceId={deviceId} onClose={() => setShowLicenseModal(false)} onActivate={handleActivateLicense} />)}
+              {showLicenseModal && (<LicenseModal deviceId={deviceId} status={licenseStatus} onClose={() => setShowLicenseModal(false)} onActivate={handleActivateLicense} />)}
+              {showInstallHelp && (<InstallPrompt platform={showInstallHelp} onClose={() => setShowInstallHelp(false)} />)}
               
-              <footer className="md:hidden fixed bottom-0 w-full bg-white border-t p-2 flex justify-around text-xs text-gray-600 z-30 print:hidden"><button onClick={() => { setView('list'); resetForm(); }} className={`flex flex-col items-center p-2 ${view === 'list' ? 'text-blue-600' : ''}`}><BookOpen size={20} /> Início</button><button onClick={() => checkLimitAndProceed(() => { setView('create'); resetForm(); })} className={`flex flex-col items-center p-2 ${view === 'create' && !editingId ? 'text-blue-600' : ''}`}><Plus size={20} /> Novo</button></footer>
+              <footer className="md:hidden fixed bottom-0 w-full bg-white border-t p-2 flex justify-around text-xs text-gray-600 z-30 print:hidden"><button onClick={() => { setView('list'); resetForm(); }} className={`flex flex-col items-center p-2 ${view === 'list' ? 'text-blue-600' : ''}`}><Icons.BookOpen size={20} /> Início</button><button onClick={() => checkPermission(() => { setView('create'); resetForm(); })} className={`flex flex-col items-center p-2 ${view === 'create' && !editingId ? 'text-blue-600' : ''}`}><Icons.Plus size={20} /> Novo</button></footer>
             </div>
           );
         }
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
-        
-        // --- REGISTRO DO SERVICE WORKER (PWA) ---
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                .then(registration => {
-                    console.log('SW registrado com sucesso:', registration.scope);
-                })
-                .catch(error => {
-                    console.log('Falha ao registrar SW:', error);
-                });
-            });
-        }
+
+        if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(() => {}); }); }
     </script>
 </body>
 </html>
