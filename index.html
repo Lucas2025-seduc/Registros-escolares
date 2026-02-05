@@ -6,9 +6,7 @@
     <title>Registros Escolares</title>
     
     <!-- PWA Configs -->
-    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#1e3a8a">
-    <link rel="apple-touch-icon" href="icon-192.png">
     <meta name="description" content="Livro de Ata Digital Escolar para registro e pesquisa de ocorridos.">
 
     <!-- React & ReactDOM -->
@@ -36,6 +34,8 @@
             .print\:flex { display: flex !important; }
             .print\:w-full { width: 100% !important; }
             .print\:h-16 { height: 50px !important; }
+            .print\:mt-4 { margin-top: 1rem !important; }
+            .page-break-before { page-break-before: always; }
         }
         .touch-action-none { touch-action: none; }
         .animate-in { animation: fadeIn 0.3s ease-out; }
@@ -56,7 +56,8 @@
         const { useState, useRef, useEffect } = React;
 
         // =========================================================================
-        // UTILITÁRIO: INDEXED DB (Armazenamento de Grande Capacidade)
+        // UTILITÁRIO: INDEXED DB (Armazenamento Persistente no Navegador)
+        // Isso garante que os arquivos fiquem salvos no App mesmo se apagados do dispositivo.
         // =========================================================================
         const db = {
             dbName: 'EscolaDB_V2',
@@ -243,7 +244,7 @@
             Info: createIcon('Info'), AlertTriangle: createIcon('AlertTriangle'), Database: createIcon('Database')
         };
 
-        const TIPOS_OCORRENCIA = ["Advertência", "Ocorrência", "Elogio", "Autorização de saída da escola", "Busca Ativa", "Conflito Socioemocional", "Saída", "Orientação", "Registro de Reunião com Pais/Responsáveis", "Outros"];
+        const TIPOS_OCORRENCIA = ["Advertência", "Ocorrência", "Elogio", "Busca Ativa", "Conflito Socioemocional", "Orientação Pedagógica", "Registro de Reunião com Pais/Responsáveis", "Outros"];
         const LOCAIS = ["Sala de aula", "Coordenação", "Sala da direção de turma", "Secretaria", "Laboratório", "Direção", "Sala de professores", "Biblioteca", "Refeitório", "Pátio", "Mecanografia", "Fora da escola", "WhatsApp", "Email", "Ligação telefônica", "Outro"];
         const BIMESTRES = ["1º Bimestre", "2º Bimestre", "3º Bimestre", "4º Bimestre", "Recuperação Final"];
         const SEMESTRES = ["1º Semestre", "2º Semestre", "Recuperação Final"];
@@ -999,37 +1000,54 @@
                       <div>
                           <h3 className="text-base font-bold border-b border-gray-300 pb-1 mb-2 text-gray-800 uppercase print:text-xs print:mb-1">Descrição do Ocorrido</h3>
                           <div className="whitespace-pre-wrap text-gray-800 leading-relaxed text-justify min-h-[100px] print:min-h-0 border border-transparent print:border-none print:text-justify">{selectedRecord.descricao}</div>
-                          
-                          {selectedRecord.anexos && selectedRecord.anexos.length > 0 && (
-                              <div className="mt-4 pt-4 border-t border-dashed">
-                                  <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">Anexos da Descrição</h4>
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                      {selectedRecord.anexos.map(att => (
-                                          <div key={att.id} className="bg-gray-50 p-2 rounded border break-inside-avoid">
-                                              {att.type === 'image' ? (
-                                                  <div className="space-y-1">
-                                                      <img src={att.content} alt="Anexo" className="max-h-48 w-full object-contain rounded bg-white" />
-                                                      <p className="text-[10px] text-gray-500 truncate">{att.name}</p>
-                                                  </div>
-                                              ) : (
-                                                  <div className="flex flex-col gap-1">
-                                                      <div className="flex items-center gap-2 mb-1">
-                                                          <Icons.Mic size={16} className="text-red-500" />
-                                                          <span className="text-xs font-bold text-gray-700">Áudio Anexado</span>
-                                                      </div>
-                                                      <audio controls src={att.content} className="w-full h-8" />
-                                                  </div>
-                                              )}
-                                          </div>
-                                      ))}
-                                  </div>
-                              </div>
-                          )}
                       </div>
                       {selectedRecord.providencias && (<div><h3 className="text-base font-bold border-b border-gray-300 pb-1 mb-2 text-gray-800 uppercase print:text-xs print:mb-1">Providências / Encaminhamentos</h3><div className="whitespace-pre-wrap text-gray-800 leading-relaxed text-justify min-h-[60px] print:min-h-0 border border-transparent print:border-none print:text-justify">{selectedRecord.providencias}</div></div>)}
                       <div className="pt-4 break-inside-avoid print:pt-2"><h3 className="text-base font-bold border-b border-gray-800 pb-1 mb-6 text-gray-800 uppercase print:text-xs print:mb-2 print:pb-1">Assinaturas e Comprovações</h3>
                         {selectedRecord.assinaturas.length === 0 ? (<p className="text-gray-400 italic text-center py-4 print:py-2">Nenhuma assinatura digital coletada.</p>) : (<div className="grid grid-cols-2 md:grid-cols-3 gap-y-8 gap-x-4 print:gap-y-4 print:gap-x-2">{selectedRecord.assinaturas.map(sig => (<div key={sig.id} className="flex flex-col items-center break-inside-avoid"><div className="h-28 w-full border-b border-gray-800 mb-1 flex items-end justify-center pb-1 relative print:h-16"><img src={sig.imagem} className="max-h-24 max-w-full object-contain print:max-h-14" alt={`Assinatura`} /></div><p className="font-bold text-sm text-center leading-tight print:text-xs">{sig.nome}</p><p className="text-xs text-gray-600 uppercase mb-1 print:text-[10px]">{sig.cargo}</p><p className="text-[9px] text-gray-400 print:text-[8px]">{sig.tipo === 'foto' ? 'Registro Fotográfico em ' : 'Assinado em '}{new Date(sig.timestamp).toLocaleDateString()} às {new Date(sig.timestamp).toLocaleTimeString()}</p>{sig.tipo === 'foto' && (<div className="mt-1 text-[10px] bg-gray-100 px-2 py-0.5 rounded border print:border-gray-300 print:text-[8px]">Ref. Data Ocorrido: {formatDateTime(selectedRecord.data + 'T' + selectedRecord.hora)}</div>)}</div>))}</div>)}
                       </div>
+
+                      {/* --- SEÇÃO DE ANEXOS MOVIDA PARA O FINAL E REDIMENSIONADA --- */}
+                      {selectedRecord.anexos && selectedRecord.anexos.length > 0 && (
+                          <div className="mt-8 pt-4 border-t-2 border-dashed border-gray-300 page-break-before break-inside-avoid print:mt-4">
+                              <h4 className="text-sm font-bold text-gray-800 uppercase mb-4 print:mb-2 flex items-center gap-2"><Icons.Paperclip size={16}/> Anexos e Evidências</h4>
+                              <div className="space-y-6 print:space-y-4">
+                                  {selectedRecord.anexos.map(att => (
+                                      <div key={att.id} className="bg-gray-50 p-4 rounded border break-inside-avoid print:bg-white print:border-gray-300 print:p-2">
+                                          {att.type === 'image' ? (
+                                              <div className="space-y-2">
+                                                  <div className="flex items-center gap-2 mb-2 text-xs font-bold text-gray-600 uppercase border-b pb-1">
+                                                      <Icons.ImageIcon size={14} /> Evidência Visual: {att.name}
+                                                  </div>
+                                                  {/* Imagem configurada para ser grande e legível */}
+                                                  <img src={att.content} alt="Anexo" className="w-full h-auto max-h-[800px] object-contain rounded bg-white border shadow-sm print:shadow-none print:max-h-[600px] mx-auto block" />
+                                              </div>
+                                          ) : (
+                                              <div className="flex flex-col gap-2">
+                                                  <div className="flex items-center justify-between mb-1 border-b pb-2">
+                                                      <div className="flex items-center gap-2">
+                                                          <Icons.Mic size={16} className="text-red-600" />
+                                                          <span className="text-sm font-bold text-gray-700">Registro de Áudio: {att.name}</span>
+                                                      </div>
+                                                      <a 
+                                                        href={att.content} 
+                                                        download={`audio_registro_${selectedRecord.id}_${att.id}.webm`}
+                                                        className="print:hidden bg-blue-100 hover:bg-blue-200 text-blue-800 text-xs px-3 py-1 rounded font-bold flex items-center gap-1 transition"
+                                                      >
+                                                        <Icons.Download size={12} /> Baixar Arquivo Original
+                                                      </a>
+                                                  </div>
+                                                  <div className="bg-white p-2 rounded border">
+                                                      <audio controls src={att.content} className="w-full h-10" />
+                                                  </div>
+                                                  <p className="text-[10px] text-gray-500 italic mt-1">* O arquivo de áudio está salvo seguramente no banco de dados deste aplicativo. Use o botão "Baixar" para salvar uma cópia externa.</p>
+                                              </div>
+                                          )}
+                                      </div>
+                                  ))}
+                              </div>
+                          </div>
+                      )}
+                      
                       <div className="hidden print:block w-full text-center text-[10px] text-gray-400 border-t pt-2 mt-4 print:relative print:mt-4 print:border-t print:pt-1">Documento gerado digitalmente pelo App Registro de Ocorridos (Prof. Lucas Sebastião Barbosa Silva). Válido como registro escolar.<br /> Proteção de Dados: Conformidade com Lei nº 13.709/2018 (LGPD).</div>
                       <div className="pt-8 border-t mt-8 print:hidden flex justify-between items-center bg-gray-50 -mx-8 px-8 pb-4 rounded-b-lg"><div className="text-xs text-gray-400">App desenvolvido por Lucas Sebastião Barbosa Silva</div><button onClick={initiatePrint} className="flex items-center gap-2 bg-gray-800 text-white px-6 py-3 rounded-lg shadow hover:bg-black transition font-bold"><Icons.Printer size={20} /> Imprimir PDF (A4)</button></div>
                     </div>
@@ -1074,5 +1092,3 @@
     </script>
 </body>
 </html>
-
-
