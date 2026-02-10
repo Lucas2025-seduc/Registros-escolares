@@ -6,9 +6,9 @@
     <title>Registros Escolares</title>
     
     <!-- PWA Configs -->
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#1e3a8a">
-    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="apple-touch-icon" href="./icon-192.png">
     <meta name="description" content="Livro de Ata Digital Escolar para registro e pesquisa de ocorridos.">
 
     <!-- React & ReactDOM -->
@@ -960,7 +960,9 @@
             if (savedReminders) { try { setReminders(JSON.parse(savedReminders)); } catch (e) { } }
 
             window.addEventListener('beforeinstallprompt', (e) => {
+                // Prevent the mini-infobar from appearing on mobile
                 e.preventDefault();
+                // Stash the event so it can be triggered later.
                 setInstallPrompt(e);
             });
             return () => clearInterval(interval);
@@ -984,7 +986,19 @@
 
           const handleInstallClick = () => {
               const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-              if (isIOS) { setShowInstallHelp('ios'); } else if (installPrompt) { installPrompt.prompt(); installPrompt.userChoice.then((choiceResult) => { if (choiceResult.outcome === 'accepted') { setInstallPrompt(null); } }); } else { alert("Para instalar, use a opção 'Adicionar à Tela Inicial' do menu do seu navegador."); }
+              if (isIOS) { 
+                  setShowInstallHelp('ios'); 
+              } else if (installPrompt) { 
+                  installPrompt.prompt(); 
+                  installPrompt.userChoice.then((choiceResult) => { 
+                      if (choiceResult.outcome === 'accepted') { 
+                          setInstallPrompt(null); 
+                      } 
+                  }); 
+              } else { 
+                  // Fallback instructions
+                  alert("Para instalar, verifique se está usando Chrome/Edge e procure a opção 'Instalar App' ou 'Adicionar à Tela Inicial' no menu do navegador. Certifique-se também que os ícones do App foram carregados corretamente."); 
+              }
           };
 
           const checkPermission = (actionCallback) => {
@@ -1182,7 +1196,7 @@
             const matchLocal = filters.local ? r.local && r.local.toLowerCase().includes(filters.local.toLowerCase()) : true;
             const matchConteudo = filters.conteudo ? (r.descricao.toLowerCase().includes(filters.conteudo.toLowerCase()) || (r.providencias && r.providencias.toLowerCase().includes(filters.conteudo.toLowerCase()))) : true;
             let matchData = true;
-            if (filters.dataInicio || filters.dataFim) { const recordDate = new Date(r.data); recordDate.setHours(0,0,0,0); if (filters.dataInicio) { const d = new Date(filters.dataInicio); d.setHours(0,0,0,0); if (recordDate < d) matchData = false; } if (filters.dataFim) { const d = new Date(filters.dataFim); d.setHours(0,0,0,0); if (recordDate > d) matchData = false; } }
+            if (filters.dataInicio || filters.dataFim) { const recordDate = new Date(r.data); recordDate.setHours(0,0,0,0); if (filters.dataInicio) { const d = new Date(filters.dataInicio); d.setHours(0,0,0,0); if (recordDate < d) matchData = false; } if (filters.dataFim) { const d = new Date(filters.dataFim); d.setHours(0,0,0,0); if (recordDate < d) matchData = false; } }
             return matchAluno && matchNivel && matchAno && matchLetra && matchTipo && matchPeriodo && matchPresentes && matchModalidade && matchLocal && matchConteudo && matchData;
           });
           const activeFiltersCount = Object.values(filters).filter(Boolean).length;
