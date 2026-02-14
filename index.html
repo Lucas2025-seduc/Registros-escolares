@@ -118,7 +118,6 @@
             }
         };
 
-        // ... [Código de Compressão de Imagem e Segurança Mantido Igual] ...
         const compressImage = async (file, maxWidth = 1200, quality = 0.7) => {
             return new Promise((resolve) => {
                 const reader = new FileReader();
@@ -222,7 +221,8 @@
             Lock: createIcon('Lock'), Unlock: createIcon('Unlock'), Key: createIcon('Key'), Clock: createIcon('Clock'),
             Smartphone: createIcon('Smartphone'), Share: createIcon('Share'), Bot: createIcon('Bot'), FileAudio: createIcon('FileAudio'),
             Info: createIcon('Info'), AlertTriangle: createIcon('AlertTriangle'), Database: createIcon('Database'),
-            Paperclip: createIcon('Paperclip'), List: createIcon('List'), CalendarDays: createIcon('CalendarDays')
+            Paperclip: createIcon('Paperclip'), List: createIcon('List'), CalendarDays: createIcon('CalendarDays'),
+            File: createIcon('File') // Icone generico para arquivos
         };
 
         // --- Constantes Globais ---
@@ -1031,18 +1031,21 @@
                             setRecords(updated.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
                             alert('Dados importados com sucesso!'); 
                         } 
-                    } 
-                } catch (err) { alert('Erro ao ler o arquivo.'); } 
+                    } else {
+                        alert("Arquivo inválido. Certifique-se de usar o arquivo .json gerado pelo backup.");
+                    }
+                } catch (err) { alert('Erro ao ler o arquivo. O formato deve ser JSON.'); } 
+                // CRUCIAL: Reseta o input para permitir importar o mesmo arquivo novamente se necessário
+                e.target.value = null;
             };
             reader.readAsText(file);
           };
 
-          // --- NOVO HANDLER DE UPLOAD COM COMPRESSÃO E SUPORTE A ARQUIVOS MAIORES ---
+          // --- NOVO HANDLER DE UPLOAD COM SUPORTE A PDF ---
           const handleAttachmentUpload = async (e, type) => {
               const file = e.target.files[0];
               if (!file) return;
               
-              // Se for imagem, comprime. Se for áudio, salva direto.
               let content;
               
               if (type === 'image') {
@@ -1052,8 +1055,19 @@
                       alert("Erro ao processar imagem.");
                       return;
                   }
+              } else if (type === 'pdf') {
+                  // Limite para PDF (ex: 20MB)
+                   if (file.size > 20 * 1024 * 1024) { 
+                      alert("Arquivo PDF muito grande (Limite 20MB)."); 
+                      return; 
+                  }
+                   content = await new Promise((resolve) => {
+                      const reader = new FileReader();
+                      reader.onloadend = () => resolve(reader.result); // Salva como Data URL (Base64)
+                      reader.readAsDataURL(file);
+                  });
               } else {
-                  // Para áudio, limite generoso de 50MB (IndexedDB aguenta)
+                  // Para áudio
                   if (file.size > 50 * 1024 * 1024) { 
                       alert("Arquivo de áudio muito grande (Limite 50MB)."); 
                       return; 
@@ -1067,6 +1081,9 @@
 
               const newAtt = { id: Date.now(), type: type, content: content, name: file.name };
               setFormData(prev => ({ ...prev, anexos: [...prev.anexos, newAtt] }));
+              
+              // Reset do input
+              e.target.value = null;
           };
 
           // --- Handler de Gravação de Áudio ---
@@ -1331,6 +1348,11 @@
                                       <Icons.FileAudio size={16} className="text-orange-500" /> Upload Arquivo Áudio
                                       <input type="file" accept="audio/*" className="hidden" onChange={(e) => handleAttachmentUpload(e, 'audio')} />
                                   </label>
+                                  {/* NOVO: Upload de PDF */}
+                                  <label className="cursor-pointer bg-white hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2 border border-gray-300 shadow-sm transition">
+                                      <Icons.File size={16} className="text-red-600" /> Anexar PDF
+                                      <input type="file" accept="application/pdf" className="hidden" onChange={(e) => handleAttachmentUpload(e, 'pdf')} />
+                                  </label>
                               </div>
 
                               {formData.anexos && formData.anexos.length > 0 && (
@@ -1338,7 +1360,9 @@
                                       {formData.anexos.map((att) => (
                                           <div key={att.id} className="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-2 rounded shadow-sm border gap-2">
                                               <div className="flex items-center gap-2 overflow-hidden">
-                                                  {att.type === 'image' ? <Icons.ImageIcon size={16} className="text-blue-500" /> : <Icons.Mic size={16} className="text-red-500" />}
+                                                  {att.type === 'image' ? <Icons.ImageIcon size={16} className="text-blue-500" /> : 
+                                                   att.type === 'pdf' ? <Icons.FileText size={16} className="text-red-500" /> :
+                                                   <Icons.Mic size={16} className="text-red-500" />}
                                                   <span className="text-xs truncate max-w-[150px] font-medium">{att.name}</span>
                                               </div>
                                               
@@ -1464,6 +1488,27 @@
                                                   </div>
                                                   {/* Imagem configurada para ser grande e legível */}
                                                   <img src={att.content} alt="Anexo" className="w-full h-auto max-h-[800px] object-contain rounded bg-white border shadow-sm print:shadow-none print:max-h-[600px] mx-auto block" />
+                                              </div>
+                                          ) : att.type === 'pdf' ? (
+                                              <div className="flex flex-col gap-2">
+                                                   <div className="flex items-center justify-between mb-1 border-b pb-2">
+                                                      <div className="flex items-center gap-2">
+                                                          <Icons.FileText size={16} className="text-red-600" />
+                                                          <span className="text-sm font-bold text-gray-700">Documento PDF: {att.name}</span>
+                                                      </div>
+                                                  </div>
+                                                  <div className="bg-white p-4 rounded border text-center space-y-2">
+                                                      <Icons.FileText size={48} className="text-red-500 mx-auto" />
+                                                      <p className="text-xs text-gray-500">Documento PDF Anexado</p>
+                                                      <a 
+                                                        href={att.content} 
+                                                        download={att.name || `documento_registro_${selectedRecord.id}_${att.id}.pdf`}
+                                                        className="bg-red-100 hover:bg-red-200 text-red-800 text-xs px-4 py-2 rounded font-bold inline-flex items-center gap-2 transition"
+                                                      >
+                                                        <Icons.Download size={14} /> Baixar PDF
+                                                      </a>
+                                                  </div>
+                                                  <p className="text-[10px] text-gray-500 italic mt-1">* Os PDFs anexados ficam salvos dentro do aplicativo.</p>
                                               </div>
                                           ) : (
                                               <div className="flex flex-col gap-2">
