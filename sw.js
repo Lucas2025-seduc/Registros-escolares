@@ -1,5 +1,5 @@
-// Nome do cache (atualize a versão 'v2' para forçar atualização no futuro)
-const CACHE_NAME = 'registro-ocorridos-v2';
+// Nome do cache ATUALIZADO para 'v3' (Isso força o navegador a recarregar o manifest novo)
+const CACHE_NAME = 'registro-ocorridos-v3';
 
 // Arquivos essenciais para o App funcionar offline
 const ASSETS_TO_CACHE = [
@@ -18,7 +18,7 @@ const ASSETS_TO_CACHE = [
 
 // 1. Instalação do Service Worker
 self.addEventListener('install', (event) => {
-  console.log('[Service Worker] Instalando...');
+  console.log('[Service Worker] Instalando nova versão v3...');
   // Força o SW a ativar imediatamente
   self.skipWaiting();
   
@@ -32,7 +32,7 @@ self.addEventListener('install', (event) => {
 
 // 2. Ativação e Limpeza de Caches Antigos
 self.addEventListener('activate', (event) => {
-  console.log('[Service Worker] Ativando...');
+  console.log('[Service Worker] Ativando v3 e limpando caches antigos...');
   event.waitUntil(
     caches.keys().then((keyList) => {
       return Promise.all(
