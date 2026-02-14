@@ -1019,33 +1019,87 @@
               if (currentStatus.valid) { actionCallback(); } else { setShowLicenseModal(true); }
           };
 
-          const handleExport = () => {
-            const dataStr = JSON.stringify(records, null, 2);
-            const blob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a'); link.href = url; link.download = `backup_ocorridos_${new Date().toISOString().split('T')[0]}.json`;
-            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+          // --- NOVO SISTEMA DE BACKUP COMPLETO (V2) ---
+          const handleExport = async () => {
+            try {
+                // 1. Busca todos os registros
+                const savedRecords = await db.getAll('records');
+                // 2. Busca todos os eventos da agenda
+                const savedAgenda = await db.getAll('agenda_events');
+                
+                // 3. Cria objeto consolidado
+                const backupData = {
+                    version: "2.0",
+                    timestamp: new Date().toISOString(),
+                    type: "backup_completo_escolar",
+                    data: {
+                        records: savedRecords,
+                        agenda: savedAgenda
+                    }
+                };
+
+                const dataStr = JSON.stringify(backupData, null, 2);
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a'); 
+                link.href = url; 
+                link.download = `backup_escolar_completo_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(link); 
+                link.click(); 
+                document.body.removeChild(link);
+            } catch (err) {
+                console.error(err);
+                alert("Erro ao gerar backup: " + err.message);
+            }
           };
           
           const handleImport = (e) => {
             const file = e.target.files[0]; if (!file) return;
+            
+            // Verifica extensão manualmente
+            if (file.type !== "application/json" && !file.name.endsWith('.json')) {
+                alert("Erro: O arquivo selecionado não é um backup válido (.json). Para anexar um PDF, use a opção 'Anexar PDF' dentro de um novo registro.");
+                e.target.value = null; // Reset input
+                return;
+            }
+
             const reader = new FileReader();
             reader.onload = async (event) => { 
                 try { 
-                    const importedData = JSON.parse(event.target.result); 
-                    if (Array.isArray(importedData)) { 
-                        if(window.confirm(`Isso adicionará ${importedData.length} registros. Deseja continuar?`)) { 
-                            for(let rec of importedData) {
-                                await db.save(rec, 'records');
+                    const json = JSON.parse(event.target.result); 
+                    
+                    if (window.confirm("Deseja restaurar este backup? Dados existentes serão mesclados.")) {
+                        let importedRecs = 0;
+                        let importedAgenda = 0;
+
+                        // Verifica formato V2 (Completo)
+                        if (json.type === "backup_completo_escolar" && json.data) {
+                            if (Array.isArray(json.data.records)) {
+                                for(let r of json.data.records) { await db.save(r, 'records'); }
+                                importedRecs = json.data.records.length;
                             }
-                            const updated = await db.getAll('records');
-                            setRecords(updated.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
-                            alert('Dados importados com sucesso!'); 
+                            if (Array.isArray(json.data.agenda)) {
+                                for(let a of json.data.agenda) { await db.save(a, 'agenda_events'); }
+                                importedAgenda = json.data.agenda.length;
+                            }
                         } 
-                    } else {
-                        alert("Arquivo inválido. Certifique-se de usar o arquivo .json gerado pelo backup.");
+                        // Suporte retroativo para V1 (Só Array de Registros)
+                        else if (Array.isArray(json)) {
+                            for(let r of json) { await db.save(r, 'records'); }
+                            importedRecs = json.length;
+                        } else {
+                            throw new Error("Formato de arquivo desconhecido.");
+                        }
+
+                        // Atualiza UI
+                        const updated = await db.getAll('records');
+                        setRecords(updated.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+                        
+                        alert(`Restauração Concluída!\n\n📋 Registros: ${importedRecs}\n📅 Agenda: ${importedAgenda}`);
                     }
-                } catch (err) { alert('Erro ao ler o arquivo. O formato deve ser JSON.'); } 
+                } catch (err) { 
+                    alert('Erro na importação: ' + err.message); 
+                } 
                 // CRUCIAL: Reseta o input para permitir importar o mesmo arquivo novamente se necessário
                 e.target.value = null;
             };
