@@ -223,7 +223,8 @@
             Info: createIcon('Info'), AlertTriangle: createIcon('AlertTriangle'), Database: createIcon('Database'),
             Paperclip: createIcon('Paperclip'), List: createIcon('List'), CalendarDays: createIcon('CalendarDays'),
             File: createIcon('File'), // Icone generico para arquivos
-            Settings: createIcon('Settings'), Wand2: createIcon('Wand2'), Loader2: createIcon('Loader2'), Sparkles: createIcon('Sparkles')
+            Settings: createIcon('Settings'), Wand2: createIcon('Wand2'), Loader2: createIcon('Loader2'), Sparkles: createIcon('Sparkles'),
+            Send: createIcon('Send') // NOVO ÍCONE ADICIONADO
         };
 
         // --- Constantes Globais ---
@@ -929,56 +930,164 @@
           const [isTestingKey, setIsTestingKey] = useState(false);
           const [testStatus, setTestStatus] = useState(null);
           const [aiReviewData, setAiReviewData] = useState({ isOpen: false, field: '', original: '', improved: '', loading: false });
-          const [aiAssistantData, setAiAssistantData] = useState({ isOpen: false, loading: false, summary: '' });
+          
+          // NOVO ESTADO: CHAT DA ASSISTENTE
+          const [aiAssistantData, setAiAssistantData] = useState({ isOpen: false, loading: false, messages: [], input: '', contextData: null });
+          const chatScrollRef = useRef(null);
+
+          // Efeito para auto-scroll do chat
+          useEffect(() => {
+              if (chatScrollRef.current) {
+                  chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+              }
+          }, [aiAssistantData.messages, aiAssistantData.loading]);
 
           // --- FUNÇÕES DA IA GEMINI ---
+          const buildAssistantContext = async () => {
+              const allEvents = await db.getAll('agenda_events');
+              const allRecords = await db.getAll('records');
+              const todayStr = new Date().toISOString().split('T')[0];
+              
+              const upcomingEvents = allEvents.filter(ev => ev.date >= todayStr && ev.status !== 'completed').sort((a,b) => a.date.localeCompare(b.date));
+              const recentRecords = allRecords.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 30); // Limita aos últimos 30 para não estourar tokens
+
+              let promptData = `\n--- DADOS ATUAIS (HOJE: ${new Date().toLocaleDateString('pt-BR')}) ---\n`;
+              promptData += "1. EVENTOS FUTUROS NA AGENDA:\n";
+              if(upcomingEvents.length === 0) promptData += "Nenhum evento.\n";
+              upcomingEvents.forEach(ev => { promptData += `- [${ev.date} ${ev.time}] ${ev.title} (${ev.type})\n`; });
+
+              promptData += "\n2. LEMBRETES PENDENTES:\n";
+              if(reminders.length === 0) promptData += "Nenhum lembrete.\n";
+              reminders.forEach(rem => { promptData += `- ${rem.text}\n`; });
+
+              promptData += "\n3. ÚLTIMOS REGISTROS/OCORRÊNCIAS (Para responder a perguntas):\n";
+              if(recentRecords.length === 0) promptData += "Nenhum registro.\n";
+              recentRecords.forEach(r => { promptData += `- Data: ${formatDateTime(r.data+'T'+r.hora)} | Aluno: ${r.aluno} | Tipo: ${r.tipo} | Detalhe: ${r.descricao.substring(0, 100)}...\n`; });
+
+              return promptData;
+          };
+
           const handleAIAssistant = async () => {
               if (!geminiKey) { setShowAiConfig(true); setTempGeminiKey(''); return; }
               
-              setAiAssistantData({ isOpen: true, loading: true, summary: '' });
+              setAiAssistantData(prev => ({ ...prev, isOpen: true, loading: true, messages: [] }));
 
               try {
-                  const allEvents = await db.getAll('agenda_events');
-                  const todayStr = new Date().toISOString().split('T')[0];
-                  // Filtra apenas eventos futuros ou de hoje que não estejam concluídos
-                  const upcomingEvents = allEvents.filter(ev => ev.date >= todayStr && ev.status !== 'completed').sort((a,b) => a.date.localeCompare(b.date));
+                  const contextText = await buildAssistantContext();
+                  setAiAssistantData(prev => ({ ...prev, contextData: contextText }));
 
-                  let promptData = "Eventos Futuros:\n";
-                  if(upcomingEvents.length === 0) promptData += "- Nenhum evento futuro na agenda.\n";
-                  upcomingEvents.forEach(ev => { promptData += `- [${ev.date} às ${ev.time}] ${ev.title} (Tipo: ${ev.type})\n`; });
+                  const prompt = `Faça um resumo acolhedor dos meus compromissos de hoje e amanhã (se houver) e liste os lembretes pendentes. Diga também que está pronta para responder perguntas sobre os registros de ocorrências ou agendar novos eventos. Use emojis.`;
 
-                  promptData += "\nLembretes Pendentes:\n";
-                  if(reminders.length === 0) promptData += "- Nenhum lembrete pendente.\n";
-                  reminders.forEach(rem => { promptData += `- ${rem.text}\n`; });
-
-                  const prompt = `Você é um(a) assistente virtual educacional simpático(a) e proativo(a).
-Seu objetivo é ler a lista de eventos futuros e lembretes pendentes de um professor e gerar um resumo diário amigável, encorajador e direto ao ponto.
-Traga os eventos e lembretes de forma organizada, destacando o que é para hoje ou amanhã, se houver.
-Use emojis para tornar a leitura agradável.
-ATENÇÃO: NÃO use formatação markdown complexa (como asteriscos ** para negrito ou hashtags # para títulos), use apenas texto limpo, quebras de linha e emojis.
-
-Dados atuais do professor:
-${promptData}
-
-Crie a mensagem do assistente agora:`;
-
-                  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${geminiModel || 'gemini-1.5-flash'}:generateContent?key=${geminiKey}`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                          contents: [{ parts: [{ text: prompt }] }],
-                          generationConfig: { temperature: 0.7 }
-                      })
-                  });
-                  const data = await res.json();
-                  if (data.error) throw new Error(data.error.message);
+                  const res = await callGeminiChat(contextText, [], prompt);
                   
-                  const summaryText = data.candidates[0].content.parts[0].text.trim();
-                  setAiAssistantData({ isOpen: true, loading: false, summary: summaryText });
+                  setAiAssistantData(prev => ({ 
+                      ...prev, 
+                      loading: false, 
+                      messages: [{ role: 'assistant', text: res.text }] 
+                  }));
               } catch (err) {
-                  alert("Falha ao gerar resumo da assistente: " + err.message);
-                  setAiAssistantData({ isOpen: false, loading: false, summary: '' });
+                  alert("Falha ao iniciar assistente: " + err.message);
+                  setAiAssistantData(prev => ({ ...prev, isOpen: false, loading: false }));
               }
+          };
+
+          const handleSendChatMessage = async () => {
+              if (!aiAssistantData.input.trim() || aiAssistantData.loading) return;
+              
+              const userMsg = aiAssistantData.input.trim();
+              const currentHistory = [...aiAssistantData.messages];
+              
+              setAiAssistantData(prev => ({ 
+                  ...prev, 
+                  input: '', 
+                  loading: true, 
+                  messages: [...prev.messages, { role: 'user', text: userMsg }] 
+              }));
+
+              try {
+                  // Atualiza o contexto (se novos registros tiverem sido feitos)
+                  const contextText = await buildAssistantContext();
+                  
+                  const res = await callGeminiChat(contextText, currentHistory, userMsg);
+                  let botResponse = res.text;
+
+                  // VERIFICA SE A IA DECIDIU EXECUTAR UMA AÇÃO (JSON INJETADO)
+                  const jsonMatch = botResponse.match(/```json\n([\s\S]*?)\n```/);
+                  if (jsonMatch) {
+                      try {
+                          const actionData = JSON.parse(jsonMatch[1]);
+                          if (actionData.action === 'add_event') {
+                              const EVENT_TYPES = { 'Aula': 'bg-blue-500', 'Reunião': 'bg-purple-500', 'Prova': 'bg-red-500', 'Trabalho': 'bg-orange-500', 'Pessoal': 'bg-green-500', 'Feriado': 'bg-pink-500', 'Outros': 'bg-gray-500' };
+                              const evColor = EVENT_TYPES[actionData.type] || 'bg-blue-500';
+                              
+                              const newEv = {
+                                  id: Date.now().toString(),
+                                  title: actionData.title,
+                                  date: actionData.date,
+                                  time: actionData.time || '08:00',
+                                  type: actionData.type || 'Outros',
+                                  description: actionData.description || '',
+                                  color: evColor,
+                                  status: 'pending'
+                              };
+                              await db.save(newEv, 'agenda_events');
+                              botResponse = botResponse.replace(/```json\n[\s\S]*?\n```/, '').trim(); // Remove o JSON da mensagem visível
+                              botResponse += "\n\n✅ *Evento adicionado à sua agenda com sucesso!*";
+                          }
+                      } catch (e) { console.error("Erro ao processar ação da IA", e); }
+                  }
+
+                  setAiAssistantData(prev => ({ 
+                      ...prev, 
+                      loading: false, 
+                      messages: [...prev.messages, { role: 'assistant', text: botResponse }] 
+                  }));
+              } catch (err) {
+                  alert("Erro na IA: " + err.message);
+                  setAiAssistantData(prev => ({ ...prev, loading: false }));
+              }
+          };
+
+          const callGeminiChat = async (contextText, history, newMessage) => {
+              const systemInstruction = `Você é a "Edu", uma assistente virtual educacional. Seja muito amigável, direta e profissional.
+              
+REGRAS:
+1. Responda dúvidas sobre registros, agenda ou lembretes baseando-se APENAS no contexto fornecido.
+2. Se o usuário pedir para criar/agendar um evento, você DEVE gerar uma mensagem amigável de confirmação E, no final da resposta, incluir estritamente este bloco JSON em markdown:
+\`\`\`json
+{
+  "action": "add_event",
+  "title": "título claro",
+  "date": "YYYY-MM-DD",
+  "time": "HH:MM",
+  "type": "Aula", 
+  "description": "descrição"
+}
+\`\`\`
+Opções de "type": Aula, Reunião, Prova, Trabalho, Pessoal, Feriado, Outros. (Se a data for hoje, use a data fornecida no contexto).
+
+${contextText}`;
+
+              // Formata histórico para a API da Gemini
+              const apiHistory = history.map(m => ({
+                  role: m.role === 'assistant' ? 'model' : 'user',
+                  parts: [{ text: m.text }]
+              }));
+              apiHistory.push({ role: 'user', parts: [{ text: newMessage }] });
+
+              const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${geminiModel || 'gemini-1.5-flash'}:generateContent?key=${geminiKey}`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                      systemInstruction: { parts: [{ text: systemInstruction }] },
+                      contents: apiHistory,
+                      generationConfig: { temperature: 0.3 } // Baixa temperatura para manter a IA lógica e obediente a formatos JSON
+                  })
+              });
+              
+              const data = await res.json();
+              if (data.error) throw new Error(data.error.message);
+              return { text: data.candidates[0].content.parts[0].text.trim() };
           };
 
           const testGeminiKey = async () => {
@@ -1152,15 +1261,14 @@ ${text}`;
               if (currentStatus.valid) { actionCallback(); } else { setShowLicenseModal(true); }
           };
 
-          // --- NOVO SISTEMA DE BACKUP COMPLETO (V2) ---
+          // --- NOVO SISTEMA DE BACKUP COMPLETO (V2) COM INTEGRAÇÃO NATIVA (DRIVE/NUVEM) ---
           const handleExport = async () => {
             try {
-                // 1. Busca todos os registros
+                // 1. Busca todos os registros e agenda
                 const savedRecords = await db.getAll('records');
-                // 2. Busca todos os eventos da agenda
                 const savedAgenda = await db.getAll('agenda_events');
                 
-                // 3. Cria objeto consolidado
+                // 2. Cria objeto consolidado
                 const backupData = {
                     version: "2.0",
                     timestamp: new Date().toISOString(),
@@ -1171,15 +1279,39 @@ ${text}`;
                     }
                 };
 
+                const fileName = `backup_escolar_completo_${new Date().toISOString().split('T')[0]}.json`;
                 const dataStr = JSON.stringify(backupData, null, 2);
                 const blob = new Blob([dataStr], { type: 'application/json' });
+                const file = new File([blob], fileName, { type: 'application/json' });
+
+                // 3. Tenta usar a Web Share API (Partilha Nativa para Google Drive no telemóvel)
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    try {
+                        await navigator.share({
+                            files: [file],
+                            title: 'Backup - Registros Escolares',
+                            text: 'Guarde este ficheiro no seu Google Drive ou envie por email para manter os seus registos seguros.',
+                        });
+                        alert("Backup preparado! Confirme que o ficheiro foi salvo com segurança no seu Drive/Nuvem.");
+                        return; // Sai da função, pois a partilha foi bem sucedida
+                    } catch (error) {
+                        console.log('Partilha cancelada ou falhou.', error);
+                        // Se o usuário cancelar, segue para o fallback de download abaixo
+                    }
+                }
+
+                // 4. Fallback: Download tradicional se estiver num PC ou a partilha falhar
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a'); 
                 link.href = url; 
-                link.download = `backup_escolar_completo_${new Date().toISOString().split('T')[0]}.json`;
+                link.download = fileName;
                 document.body.appendChild(link); 
                 link.click(); 
                 document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                
+                alert("O backup foi transferido para a sua pasta de Downloads. Guarde-o num local seguro (ex: Google Drive).");
+
             } catch (err) {
                 console.error(err);
                 alert("Erro ao gerar backup: " + err.message);
@@ -1921,37 +2053,75 @@ ${text}`;
                   </div>
               )}
 
-              {/* MODAL ASSISTENTE VIRTUAL IA */}
+              {/* MODAL ASSISTENTE VIRTUAL IA (CHAT) */}
               {aiAssistantData.isOpen && (
-                  <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[70] p-4 animate-in">
-                      <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full flex flex-col max-h-[90vh] overflow-hidden">
-                          <div className="bg-gradient-to-r from-indigo-600 to-purple-700 p-4 flex justify-between items-center shrink-0">
-                              <h3 className="font-bold text-white flex items-center gap-2"><Icons.Bot /> Assistente Virtual Escolar</h3>
-                              <button onClick={() => setAiAssistantData({...aiAssistantData, isOpen: false})} className="text-white/70 hover:text-white"><Icons.X size={24} /></button>
+                  <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[70] p-4 animate-in md:p-6">
+                      <div className="bg-slate-50 rounded-xl shadow-2xl max-w-lg w-full h-[85vh] flex flex-col overflow-hidden border border-indigo-200">
+                          
+                          {/* HEADER CHAT */}
+                          <div className="bg-gradient-to-r from-indigo-600 to-purple-700 p-4 flex justify-between items-center shrink-0 shadow-md z-10">
+                              <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-inner relative">
+                                      <Icons.Bot className="text-indigo-600" size={24} />
+                                      <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-white rounded-full"></span>
+                                  </div>
+                                  <div>
+                                      <h3 className="font-bold text-white leading-tight">Edu (Assistente Virtual)</h3>
+                                      <p className="text-[10px] text-indigo-200 font-medium">Pronta para agendar e informar</p>
+                                  </div>
+                              </div>
+                              <button onClick={() => setAiAssistantData({...aiAssistantData, isOpen: false})} className="text-white/70 hover:text-white p-1 bg-white/10 rounded-full transition"><Icons.X size={20} /></button>
                           </div>
                           
-                          <div className="p-6 overflow-y-auto bg-slate-50 flex-grow relative">
-                              {aiAssistantData.loading ? (
-                                  <div className="flex flex-col items-center justify-center py-10 space-y-4 text-indigo-600">
-                                      <Icons.Loader2 size={40} className="animate-spin" />
-                                      <p className="font-bold animate-pulse text-center">Lendo a sua agenda e a organizar os seus lembretes...</p>
+                          {/* ÁREA DE MENSAGENS */}
+                          <div className="p-4 overflow-y-auto flex-grow space-y-4" ref={chatScrollRef}>
+                              {aiAssistantData.messages.map((msg, idx) => (
+                                  <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in`}>
+                                      <div className={`max-w-[85%] p-3 rounded-2xl shadow-sm text-sm whitespace-pre-wrap leading-relaxed ${msg.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white text-gray-800 rounded-tl-none border border-indigo-100'}`}>
+                                          {msg.text}
+                                      </div>
                                   </div>
-                              ) : (
-                                  <div className="space-y-4">
-                                      <div className="flex gap-3">
-                                          <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center shrink-0 border-2 border-indigo-300 shadow-sm">
-                                              <Icons.Bot className="text-indigo-600" size={24} />
-                                          </div>
-                                          <div className="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border border-indigo-100 text-gray-800 text-sm whitespace-pre-wrap leading-relaxed">
-                                              {aiAssistantData.summary}
+                              ))}
+                              
+                              {aiAssistantData.loading && (
+                                  <div className="flex justify-start animate-in fade-in">
+                                      <div className="bg-white p-4 rounded-2xl rounded-tl-none border border-indigo-100 shadow-sm flex items-center gap-2">
+                                          <div className="flex space-x-1">
+                                              <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{animationDelay: '0ms'}}></div>
+                                              <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
+                                              <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
                                           </div>
                                       </div>
                                   </div>
                               )}
                           </div>
 
-                          <div className="p-4 border-t bg-white flex justify-end gap-3 shrink-0">
-                              <button onClick={() => setAiAssistantData({...aiAssistantData, isOpen: false})} className="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-bold transition">Entendido!</button>
+                          {/* ÁREA DE INPUT DE TEXTO */}
+                          <div className="p-3 bg-white border-t border-gray-200 shrink-0">
+                              <form 
+                                  onSubmit={(e) => { e.preventDefault(); handleSendChatMessage(); }} 
+                                  className="flex items-center gap-2 bg-slate-50 p-1 rounded-full border border-gray-300 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-200 transition"
+                              >
+                                  <input 
+                                      type="text" 
+                                      placeholder="Pergunte ou peça para agendar algo..." 
+                                      className="flex-grow bg-transparent border-none focus:outline-none px-4 text-sm text-gray-700"
+                                      value={aiAssistantData.input}
+                                      onChange={(e) => setAiAssistantData({...aiAssistantData, input: e.target.value})}
+                                      disabled={aiAssistantData.loading}
+                                      autoFocus
+                                  />
+                                  <button 
+                                      type="submit" 
+                                      disabled={!aiAssistantData.input.trim() || aiAssistantData.loading}
+                                      className="bg-indigo-600 text-white p-2.5 rounded-full hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition shadow-sm"
+                                  >
+                                      <Icons.Send size={18} />
+                                  </button>
+                              </form>
+                              <div className="text-center mt-2 text-[10px] text-gray-400">
+                                  Ex: "Quantas ocorrências o João tem?" ou "Agendar reunião com diretoria amanhã às 15h"
+                              </div>
                           </div>
                       </div>
                   </div>
