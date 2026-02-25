@@ -929,8 +929,58 @@
           const [isTestingKey, setIsTestingKey] = useState(false);
           const [testStatus, setTestStatus] = useState(null);
           const [aiReviewData, setAiReviewData] = useState({ isOpen: false, field: '', original: '', improved: '', loading: false });
+          const [aiAssistantData, setAiAssistantData] = useState({ isOpen: false, loading: false, summary: '' });
 
           // --- FUNÇÕES DA IA GEMINI ---
+          const handleAIAssistant = async () => {
+              if (!geminiKey) { setShowAiConfig(true); setTempGeminiKey(''); return; }
+              
+              setAiAssistantData({ isOpen: true, loading: true, summary: '' });
+
+              try {
+                  const allEvents = await db.getAll('agenda_events');
+                  const todayStr = new Date().toISOString().split('T')[0];
+                  // Filtra apenas eventos futuros ou de hoje que não estejam concluídos
+                  const upcomingEvents = allEvents.filter(ev => ev.date >= todayStr && ev.status !== 'completed').sort((a,b) => a.date.localeCompare(b.date));
+
+                  let promptData = "Eventos Futuros:\n";
+                  if(upcomingEvents.length === 0) promptData += "- Nenhum evento futuro na agenda.\n";
+                  upcomingEvents.forEach(ev => { promptData += `- [${ev.date} às ${ev.time}] ${ev.title} (Tipo: ${ev.type})\n`; });
+
+                  promptData += "\nLembretes Pendentes:\n";
+                  if(reminders.length === 0) promptData += "- Nenhum lembrete pendente.\n";
+                  reminders.forEach(rem => { promptData += `- ${rem.text}\n`; });
+
+                  const prompt = `Você é um(a) assistente virtual educacional simpático(a) e proativo(a).
+Seu objetivo é ler a lista de eventos futuros e lembretes pendentes de um professor e gerar um resumo diário amigável, encorajador e direto ao ponto.
+Traga os eventos e lembretes de forma organizada, destacando o que é para hoje ou amanhã, se houver.
+Use emojis para tornar a leitura agradável.
+ATENÇÃO: NÃO use formatação markdown complexa (como asteriscos ** para negrito ou hashtags # para títulos), use apenas texto limpo, quebras de linha e emojis.
+
+Dados atuais do professor:
+${promptData}
+
+Crie a mensagem do assistente agora:`;
+
+                  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${geminiModel || 'gemini-1.5-flash'}:generateContent?key=${geminiKey}`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                          contents: [{ parts: [{ text: prompt }] }],
+                          generationConfig: { temperature: 0.7 }
+                      })
+                  });
+                  const data = await res.json();
+                  if (data.error) throw new Error(data.error.message);
+                  
+                  const summaryText = data.candidates[0].content.parts[0].text.trim();
+                  setAiAssistantData({ isOpen: true, loading: false, summary: summaryText });
+              } catch (err) {
+                  alert("Falha ao gerar resumo da assistente: " + err.message);
+                  setAiAssistantData({ isOpen: false, loading: false, summary: '' });
+              }
+          };
+
           const testGeminiKey = async () => {
               if(!tempGeminiKey.trim()) return;
               setIsTestingKey(true); setTestStatus(null);
@@ -1421,18 +1471,33 @@ ${text}`;
 
                 {view === 'list' && (
                   <div className="print:hidden space-y-6">
-                    {/* Botão de Acesso Rápido à Agenda */}
-                    <div className="bg-white rounded-lg shadow p-2 flex items-center justify-between border-l-4 border-l-purple-600 hover:shadow-md transition cursor-pointer" onClick={() => setView('agenda')}>
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-purple-100 rounded-full text-purple-700">
-                                <Icons.CalendarDays size={24} />
+                    {/* Botões de Acesso Rápido e IA */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-white rounded-lg shadow p-3 flex items-center justify-between border-l-4 border-l-purple-600 hover:shadow-md transition cursor-pointer" onClick={() => setView('agenda')}>
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-purple-100 rounded-full text-purple-700">
+                                    <Icons.CalendarDays size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-gray-800">Minha Agenda</h3>
+                                    <p className="text-xs text-gray-500">Gerencie aulas e reuniões</p>
+                                </div>
                             </div>
-                            <div>
-                                <h3 className="font-bold text-gray-800">Minha Agenda do Professor</h3>
-                                <p className="text-xs text-gray-500">Gerencie aulas, reuniões e compromissos</p>
-                            </div>
+                            <Icons.ChevronRight className="text-gray-400" />
                         </div>
-                        <Icons.ChevronRight className="text-gray-400" />
+
+                        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg shadow p-3 flex items-center justify-between hover:shadow-md transition cursor-pointer text-white" onClick={handleAIAssistant}>
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-white/20 rounded-full text-white">
+                                    <Icons.Bot size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold">Assistente Virtual (IA)</h3>
+                                    <p className="text-xs text-indigo-100">Resumo da sua agenda e lembretes</p>
+                                </div>
+                            </div>
+                            <Icons.Sparkles className="text-indigo-200" />
+                        </div>
                     </div>
 
                     <div className="bg-gradient-to-r from-orange-50 to-orange-100 p-4 rounded-lg shadow-sm border border-orange-200">
@@ -1851,6 +1916,42 @@ ${text}`;
                           <div className="p-4 border-t bg-white flex justify-end gap-3 rounded-b-xl shrink-0">
                               <button onClick={() => setAiReviewData({...aiReviewData, isOpen: false})} className="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 font-bold hover:bg-gray-50">Descartar</button>
                               <button onClick={applyAiText} className="px-5 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-bold shadow-lg flex items-center gap-2 transition transform hover:scale-105"><Icons.Check size={18} /> Aprovar e Substituir</button>
+                          </div>
+                      </div>
+                  </div>
+              )}
+
+              {/* MODAL ASSISTENTE VIRTUAL IA */}
+              {aiAssistantData.isOpen && (
+                  <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[70] p-4 animate-in">
+                      <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full flex flex-col max-h-[90vh] overflow-hidden">
+                          <div className="bg-gradient-to-r from-indigo-600 to-purple-700 p-4 flex justify-between items-center shrink-0">
+                              <h3 className="font-bold text-white flex items-center gap-2"><Icons.Bot /> Assistente Virtual Escolar</h3>
+                              <button onClick={() => setAiAssistantData({...aiAssistantData, isOpen: false})} className="text-white/70 hover:text-white"><Icons.X size={24} /></button>
+                          </div>
+                          
+                          <div className="p-6 overflow-y-auto bg-slate-50 flex-grow relative">
+                              {aiAssistantData.loading ? (
+                                  <div className="flex flex-col items-center justify-center py-10 space-y-4 text-indigo-600">
+                                      <Icons.Loader2 size={40} className="animate-spin" />
+                                      <p className="font-bold animate-pulse text-center">Lendo a sua agenda e a organizar os seus lembretes...</p>
+                                  </div>
+                              ) : (
+                                  <div className="space-y-4">
+                                      <div className="flex gap-3">
+                                          <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center shrink-0 border-2 border-indigo-300 shadow-sm">
+                                              <Icons.Bot className="text-indigo-600" size={24} />
+                                          </div>
+                                          <div className="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border border-indigo-100 text-gray-800 text-sm whitespace-pre-wrap leading-relaxed">
+                                              {aiAssistantData.summary}
+                                          </div>
+                                      </div>
+                                  </div>
+                              )}
+                          </div>
+
+                          <div className="p-4 border-t bg-white flex justify-end gap-3 shrink-0">
+                              <button onClick={() => setAiAssistantData({...aiAssistantData, isOpen: false})} className="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-bold transition">Entendido!</button>
                           </div>
                       </div>
                   </div>
