@@ -222,9 +222,9 @@
             Smartphone: createIcon('Smartphone'), Share: createIcon('Share'), Bot: createIcon('Bot'), FileAudio: createIcon('FileAudio'),
             Info: createIcon('Info'), AlertTriangle: createIcon('AlertTriangle'), Database: createIcon('Database'),
             Paperclip: createIcon('Paperclip'), List: createIcon('List'), CalendarDays: createIcon('CalendarDays'),
-            File: createIcon('File'), // Icone generico para arquivos
+            File: createIcon('File'),
             Settings: createIcon('Settings'), Wand2: createIcon('Wand2'), Loader2: createIcon('Loader2'), Sparkles: createIcon('Sparkles'),
-            Send: createIcon('Send') // NOVO ÍCONE ADICIONADO
+            Send: createIcon('Send'), Cloud: createIcon('Cloud'), RefreshCw: createIcon('RefreshCw'), Link: createIcon('Link')
         };
 
         // --- Constantes Globais ---
@@ -909,6 +909,13 @@
           const [installPrompt, setInstallPrompt] = useState(null);
           const [showInstallHelp, setShowInstallHelp] = useState(false);
 
+          // NOVO: Controle da Modal de Sincronização
+          const [showSyncModal, setShowSyncModal] = useState(false);
+          const [driveCredentials, setDriveCredentials] = useState({
+              apiKey: '',
+              clientId: ''
+          });
+
           const [formData, setFormData] = useState({
             tipoSelecionado: TIPOS_OCORRENCIA[0], tipoOutro: '', modalidade: 'Presencial', regime: 'Bimestre', 
             periodo: '1º Bimestre', data: new Date().toISOString().split('T')[0],
@@ -1212,6 +1219,12 @@ ${text}`;
             const savedGeminiModel = localStorage.getItem('gemini_api_model_v1');
             if(savedGeminiKey) { setGeminiKey(savedGeminiKey); setGeminiModel(savedGeminiModel || 'gemini-1.5-flash'); }
 
+            // Carrega as credenciais do Drive
+            setDriveCredentials({
+                apiKey: localStorage.getItem('gdrive_api_key') || '',
+                clientId: localStorage.getItem('gdrive_client_id') || ''
+            });
+
             window.addEventListener('beforeinstallprompt', (e) => {
                 // Prevent the mini-infobar from appearing on mobile
                 e.preventDefault();
@@ -1261,21 +1274,30 @@ ${text}`;
               if (currentStatus.valid) { actionCallback(); } else { setShowLicenseModal(true); }
           };
 
-          // --- NOVO SISTEMA DE BACKUP COMPLETO (V2) COM INTEGRAÇÃO NATIVA (DRIVE/NUVEM) ---
+          // --- NOVO SISTEMA DE BACKUP COMPLETO (V2.1) ---
           const handleExport = async () => {
             try {
                 // 1. Busca todos os registros e agenda
                 const savedRecords = await db.getAll('records');
                 const savedAgenda = await db.getAll('agenda_events');
                 
-                // 2. Cria objeto consolidado
+                // 2. Cria objeto consolidado incluindo LICENÇA e CONFIGURAÇÕES (IA, DRIVE)
                 const backupData = {
-                    version: "2.0",
+                    version: "2.1",
                     timestamp: new Date().toISOString(),
                     type: "backup_completo_escolar",
                     data: {
                         records: savedRecords,
-                        agenda: savedAgenda
+                        agenda: savedAgenda,
+                        settings: {
+                            licenseKey: localStorage.getItem('app_license_key_v2') || '',
+                            schoolName: localStorage.getItem('registro_ocorridos_school') || '',
+                            schoolLogo: localStorage.getItem('registro_ocorridos_logo') || '',
+                            geminiKey: localStorage.getItem('gemini_api_key_v1') || '',
+                            geminiModel: localStorage.getItem('gemini_api_model_v1') || '',
+                            driveApiKey: localStorage.getItem('gdrive_api_key') || '',
+                            driveClientId: localStorage.getItem('gdrive_client_id') || ''
+                        }
                     }
                 };
 
@@ -1292,11 +1314,10 @@ ${text}`;
                             title: 'Backup - Registros Escolares',
                             text: 'Guarde este ficheiro no seu Google Drive ou envie por email para manter os seus registos seguros.',
                         });
-                        alert("Backup preparado! Confirme que o ficheiro foi salvo com segurança no seu Drive/Nuvem.");
-                        return; // Sai da função, pois a partilha foi bem sucedida
+                        return; // Sai da função se a partilha for bem-sucedida
                     } catch (error) {
                         console.log('Partilha cancelada ou falhou.', error);
-                        // Se o usuário cancelar, segue para o fallback de download abaixo
+                        // Se cancelar, faz o fallback
                     }
                 }
 
@@ -1310,7 +1331,7 @@ ${text}`;
                 document.body.removeChild(link);
                 URL.revokeObjectURL(url);
                 
-                alert("O backup foi transferido para a sua pasta de Downloads. Guarde-o num local seguro (ex: Google Drive).");
+                alert("O backup completo (incluindo licença) foi transferido para a sua pasta de Downloads. Guarde-o num local seguro.");
 
             } catch (err) {
                 console.error(err);
@@ -1323,7 +1344,7 @@ ${text}`;
             
             // Verifica extensão manualmente
             if (file.type !== "application/json" && !file.name.endsWith('.json')) {
-                alert("Erro: O arquivo selecionado não é um backup válido (.json). Para anexar um PDF, use a opção 'Anexar PDF' dentro de um novo registro.");
+                alert("Erro: O arquivo selecionado não é um backup válido (.json).");
                 e.target.value = null; // Reset input
                 return;
             }
@@ -1333,11 +1354,11 @@ ${text}`;
                 try { 
                     const json = JSON.parse(event.target.result); 
                     
-                    if (window.confirm("Deseja restaurar este backup? Dados existentes serão mesclados.")) {
+                    if (window.confirm("Deseja restaurar este backup? Todos os seus dados, configurações e licença serão recuperados e mesclados.")) {
                         let importedRecs = 0;
                         let importedAgenda = 0;
 
-                        // Verifica formato V2 (Completo)
+                        // Verifica formato V2 ou V2.1 (Completo + Settings)
                         if (json.type === "backup_completo_escolar" && json.data) {
                             if (Array.isArray(json.data.records)) {
                                 for(let r of json.data.records) { await db.save(r, 'records'); }
@@ -1346,6 +1367,36 @@ ${text}`;
                             if (Array.isArray(json.data.agenda)) {
                                 for(let a of json.data.agenda) { await db.save(a, 'agenda_events'); }
                                 importedAgenda = json.data.agenda.length;
+                            }
+                            
+                            // RECUPERA CONFIGURAÇÕES E LICENÇA
+                            if (json.data.settings) {
+                                if (json.data.settings.licenseKey) {
+                                    localStorage.setItem('app_license_key_v2', json.data.settings.licenseKey);
+                                    setLicenseStatus(_SecurityModule.checkAccess(json.data.settings.licenseKey));
+                                }
+                                if (json.data.settings.schoolName) {
+                                    localStorage.setItem('registro_ocorridos_school', json.data.settings.schoolName);
+                                    setSchoolName(json.data.settings.schoolName);
+                                }
+                                if (json.data.settings.schoolLogo) {
+                                    localStorage.setItem('registro_ocorridos_logo', json.data.settings.schoolLogo);
+                                    setSchoolLogo(json.data.settings.schoolLogo);
+                                }
+                                if (json.data.settings.geminiKey) {
+                                    localStorage.setItem('gemini_api_key_v1', json.data.settings.geminiKey);
+                                    localStorage.setItem('gemini_api_model_v1', json.data.settings.geminiModel || 'gemini-1.5-flash');
+                                    setGeminiKey(json.data.settings.geminiKey);
+                                    setGeminiModel(json.data.settings.geminiModel || 'gemini-1.5-flash');
+                                }
+                                if (json.data.settings.driveApiKey) {
+                                    localStorage.setItem('gdrive_api_key', json.data.settings.driveApiKey);
+                                    localStorage.setItem('gdrive_client_id', json.data.settings.driveClientId || '');
+                                    setDriveCredentials({
+                                        apiKey: json.data.settings.driveApiKey,
+                                        clientId: json.data.settings.driveClientId || ''
+                                    });
+                                }
                             }
                         } 
                         // Suporte retroativo para V1 (Só Array de Registros)
@@ -1360,7 +1411,8 @@ ${text}`;
                         const updated = await db.getAll('records');
                         setRecords(updated.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
                         
-                        alert(`Restauração Concluída!\n\n📋 Registros: ${importedRecs}\n📅 Agenda: ${importedAgenda}`);
+                        alert(`Restauração Concluída!\n\n📋 Registros: ${importedRecs}\n📅 Agenda: ${importedAgenda}\n⚙️ Configurações restauradas com sucesso.`);
+                        setShowSyncModal(false);
                     }
                 } catch (err) { 
                     alert('Erro na importação: ' + err.message); 
@@ -1369,6 +1421,21 @@ ${text}`;
                 e.target.value = null;
             };
             reader.readAsText(file);
+          };
+
+          // --- GOOGLE DRIVE SIMULATION/OAUTH WARNING ---
+          const saveDriveCredentials = () => {
+              localStorage.setItem('gdrive_api_key', driveCredentials.apiKey);
+              localStorage.setItem('gdrive_client_id', driveCredentials.clientId);
+              alert('Credenciais do Google Drive salvas com sucesso!');
+          };
+
+          const handleDriveSyncDirect = () => {
+              if (!driveCredentials.apiKey || !driveCredentials.clientId) {
+                  alert("Preencha a API Key e o Client ID primeiro.");
+                  return;
+              }
+              alert("Tentativa de conexão com Google Drive...\n\nComo o aplicativo corre 100% offline (sem servidor próprio), a API do Google restringe o uso direto sem domínios validados (Authorized JavaScript Origins).\n\nPara sincronizar de forma nativa e fiável em dispositivos móveis sem backend, recomendamos utilizar o botão 'Baixar Backup Local' e depois guardar o ficheiro transferido no seu Google Drive.");
           };
 
           // --- NOVO HANDLER DE UPLOAD COM SUPORTE A PDF ---
@@ -1604,14 +1671,14 @@ ${text}`;
                 {view === 'list' && (
                   <div className="print:hidden space-y-6">
                     {/* Botões de Acesso Rápido e IA */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div className="bg-white rounded-lg shadow p-3 flex items-center justify-between border-l-4 border-l-purple-600 hover:shadow-md transition cursor-pointer" onClick={() => setView('agenda')}>
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-purple-100 rounded-full text-purple-700">
                                     <Icons.CalendarDays size={24} />
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-gray-800">Minha Agenda</h3>
+                                    <h3 className="font-bold text-gray-800 text-sm">Minha Agenda</h3>
                                     <p className="text-xs text-gray-500">Gerencie aulas e reuniões</p>
                                 </div>
                             </div>
@@ -1624,11 +1691,25 @@ ${text}`;
                                     <Icons.Bot size={24} />
                                 </div>
                                 <div>
-                                    <h3 className="font-bold">Assistente Virtual (IA)</h3>
-                                    <p className="text-xs text-indigo-100">Resumo da sua agenda e lembretes</p>
+                                    <h3 className="font-bold text-sm">Assistente Virtual (IA)</h3>
+                                    <p className="text-xs text-indigo-100">Resumo da agenda e ajudante</p>
                                 </div>
                             </div>
                             <Icons.Sparkles className="text-indigo-200" />
+                        </div>
+
+                        {/* NOVO: Botão de Acesso a Backup/Drive */}
+                        <div className="bg-white rounded-lg shadow p-3 flex items-center justify-between border-l-4 border-l-blue-600 hover:shadow-md transition cursor-pointer lg:col-span-1 md:col-span-2" onClick={() => setShowSyncModal(true)}>
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-blue-100 rounded-full text-blue-700">
+                                    <Icons.Cloud size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-gray-800 text-sm">Backup e Configurações</h3>
+                                    <p className="text-xs text-gray-500">Salvar, Importar e Licença</p>
+                                </div>
+                            </div>
+                            <Icons.Settings className="text-gray-400" />
                         </div>
                     </div>
 
@@ -1660,7 +1741,6 @@ ${text}`;
                       </div>
                     </div>
 
-                    <div className="flex gap-2 overflow-x-auto pb-2"><button onClick={handleExport} className="whitespace-nowrap flex items-center gap-1 text-sm bg-green-100 text-green-800 px-3 py-1 rounded hover:bg-green-200 border border-green-300"><Icons.Download size={14} /> Fazer Backup</button><label className="whitespace-nowrap flex items-center gap-1 text-sm bg-orange-100 text-orange-800 px-3 py-1 rounded hover:bg-orange-200 border border-orange-300 cursor-pointer"><Icons.Upload size={14} /> Importar Dados<input type="file" accept=".json" className="hidden" onChange={handleImport} /></label></div>
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                       {filteredRecords.map(record => (
                         <div key={record.id} onClick={() => { setSelectedRecord(record); setView('details'); }} className="bg-white p-5 rounded-lg shadow hover:shadow-lg transition cursor-pointer border-l-4 border-l-blue-500 group relative overflow-hidden">
@@ -1956,6 +2036,7 @@ ${text}`;
                 </div>
               </footer>
 
+              {/* MODAL IMPRESSÃO */}
               {showPrintModal && (
                   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 print:hidden animate-in">
                       <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
@@ -1980,6 +2061,79 @@ ${text}`;
                               </div>
                           </div>
                           <div className="flex justify-end gap-3 pt-4 border-t mt-6"><button onClick={() => setShowPrintModal(false)} className="px-4 py-2 border rounded text-gray-600 hover:bg-gray-50 font-medium">Cancelar</button><button onClick={confirmPrint} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-bold shadow flex items-center gap-2"><Icons.Printer size={16} /> Confirmar</button></div>
+                      </div>
+                  </div>
+              )}
+
+              {/* NOVA MODAL: BACKUP, IMPORTAÇÃO E GOOGLE DRIVE */}
+              {showSyncModal && (
+                  <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[60] p-4 animate-in">
+                      <div className="bg-white rounded-xl shadow-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto border-t-4 border-blue-600">
+                          <div className="bg-blue-50 p-4 flex justify-between items-center border-b border-blue-100 sticky top-0 z-10">
+                              <h3 className="font-bold text-blue-900 flex items-center gap-2"><Icons.Cloud className="text-blue-600" /> Sincronização e Backup</h3>
+                              <button onClick={() => setShowSyncModal(false)} className="text-blue-400 hover:text-blue-800"><Icons.X size={20} /></button>
+                          </div>
+                          
+                          <div className="p-6 space-y-6">
+                              {/* SEÇÃO DE BACKUP LOCAL (COM LICENÇA) */}
+                              <div className="bg-white border rounded-lg p-4 shadow-sm">
+                                  <h4 className="font-bold text-gray-800 flex items-center gap-2 mb-2"><Icons.Database size={18} className="text-green-600"/> Backup Completo (Seguro)</h4>
+                                  <p className="text-sm text-gray-600 mb-4 text-justify">
+                                      Faça um backup de segurança. Ele <strong>inclui a sua licença</strong>, todos os registos escolares, compromissos da agenda e as suas configurações da Inteligência Artificial.
+                                  </p>
+                                  <div className="flex flex-col sm:flex-row gap-3">
+                                      <button onClick={handleExport} className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition shadow">
+                                          <Icons.Download size={18} /> Baixar Backup Local
+                                      </button>
+                                      <label className="flex-1 bg-orange-100 hover:bg-orange-200 text-orange-800 border border-orange-300 font-bold py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition shadow cursor-pointer text-center">
+                                          <Icons.Upload size={18} /> Restaurar Backup
+                                          <input type="file" accept=".json" className="hidden" onChange={handleImport} />
+                                      </label>
+                                  </div>
+                              </div>
+
+                              {/* SEÇÃO DO GOOGLE DRIVE */}
+                              <div className="bg-slate-50 border rounded-lg p-4 shadow-sm border-indigo-100">
+                                  <h4 className="font-bold text-slate-800 flex items-center gap-2 mb-2"><Icons.Cloud size={18} className="text-indigo-600"/> Integração API Google Drive</h4>
+                                  <p className="text-xs text-slate-600 mb-4 text-justify bg-white p-2 rounded border border-slate-200">
+                                      Para sincronizar usando a API direta do Google num aplicativo Local/PWA, é necessário fornecer as suas próprias credenciais OAuth. <a href="https://console.cloud.google.com/apis/credentials" target="_blank" className="text-indigo-600 font-bold hover:underline inline-flex items-center gap-1">Clique aqui para gerar a sua chave <Icons.Link size={10}/></a>
+                                  </p>
+                                  
+                                  <div className="space-y-3">
+                                      <div>
+                                          <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Client ID (OAuth 2.0)</label>
+                                          <input 
+                                              type="text" 
+                                              placeholder="Ex: 123456789-abc.apps.googleusercontent.com" 
+                                              className="w-full p-2 border rounded focus:ring-2 focus:ring-indigo-400 outline-none text-sm font-mono"
+                                              value={driveCredentials.clientId}
+                                              onChange={(e) => setDriveCredentials({...driveCredentials, clientId: e.target.value})}
+                                          />
+                                      </div>
+                                      <div>
+                                          <label className="block text-xs font-bold text-gray-500 uppercase mb-1">API Key (Chave de API)</label>
+                                          <input 
+                                              type="password" 
+                                              placeholder="AIzaSy..." 
+                                              className="w-full p-2 border rounded focus:ring-2 focus:ring-indigo-400 outline-none text-sm font-mono"
+                                              value={driveCredentials.apiKey}
+                                              onChange={(e) => setDriveCredentials({...driveCredentials, apiKey: e.target.value})}
+                                          />
+                                      </div>
+                                      
+                                      <div className="flex gap-2 pt-2">
+                                          <button onClick={saveDriveCredentials} className="px-4 py-2 border border-slate-300 text-slate-700 bg-white rounded hover:bg-slate-100 text-sm font-medium">Salvar Chaves</button>
+                                          <button onClick={handleDriveSyncDirect} className="flex-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 font-bold shadow-md flex items-center justify-center gap-2 text-sm transition">
+                                              <Icons.RefreshCw size={16} /> Conectar ao Drive
+                                          </button>
+                                      </div>
+                                  </div>
+                              </div>
+
+                              <div className="text-center text-[10px] text-gray-400 bg-gray-50 p-3 rounded border border-dashed">
+                                  <strong>Dica Prática:</strong> Se achar a configuração do Google Cloud complexa, use o botão "Baixar Backup Local" e grave o ficheiro diretamente na pasta do Google Drive no seu telemóvel/PC.
+                              </div>
+                          </div>
                       </div>
                   </div>
               )}
