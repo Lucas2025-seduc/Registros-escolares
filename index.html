@@ -55,6 +55,14 @@
         .agenda-scroll::-webkit-scrollbar-track { background: #f1f1f1; }
         .agenda-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         .agenda-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Pulse for Voice Recognition */
+        @keyframes pulse-mic {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .mic-listening { animation: pulse-mic 1s infinite; color: #ef4444; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -67,17 +75,15 @@
         // UTILITÁRIO: INDEXED DB (Atualizado para V3 - Suporte a Agenda)
         // =========================================================================
         const db = {
-            dbName: 'EscolaDB_V3', // Versão incrementada
+            dbName: 'EscolaDB_V3',
             async init() {
                 return new Promise((resolve, reject) => {
                     const request = indexedDB.open(this.dbName, 3);
                     request.onupgradeneeded = (event) => {
                         const db = event.target.result;
-                        // Store de Registros
                         if (!db.objectStoreNames.contains('records')) {
                             db.createObjectStore('records', { keyPath: 'id' });
                         }
-                        // Nova Store de Agenda
                         if (!db.objectStoreNames.contains('agenda_events')) {
                             db.createObjectStore('agenda_events', { keyPath: 'id' });
                         }
@@ -92,7 +98,7 @@
                     const transaction = db.transaction([storeName], 'readonly');
                     const store = transaction.objectStore(storeName);
                     const request = store.getAll();
-                    request.onsuccess = () => resolve(request.result); // A ordenação deve ser feita no componente
+                    request.onsuccess = () => resolve(request.result);
                     request.onerror = () => reject(request.error);
                 });
             },
@@ -222,9 +228,8 @@
             Smartphone: createIcon('Smartphone'), Share: createIcon('Share'), Bot: createIcon('Bot'), FileAudio: createIcon('FileAudio'),
             Info: createIcon('Info'), AlertTriangle: createIcon('AlertTriangle'), Database: createIcon('Database'),
             Paperclip: createIcon('Paperclip'), List: createIcon('List'), CalendarDays: createIcon('CalendarDays'),
-            File: createIcon('File'), // Icone generico para arquivos
-            Settings: createIcon('Settings'), Wand2: createIcon('Wand2'), Loader2: createIcon('Loader2'), Sparkles: createIcon('Sparkles'),
-            Send: createIcon('Send') // NOVO ÍCONE ADICIONADO
+            File: createIcon('File'), Settings: createIcon('Settings'), Wand2: createIcon('Wand2'), Loader2: createIcon('Loader2'), 
+            Sparkles: createIcon('Sparkles'), Send: createIcon('Send')
         };
 
         // --- Constantes Globais ---
@@ -245,8 +250,6 @@
             const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]); // YYYY-MM-DD
             const [showEventModal, setShowEventModal] = useState(false);
             const [searchTerm, setSearchTerm] = useState("");
-            
-            // Estado para edição
             const [editingEventId, setEditingEventId] = useState(null);
             
             const [newEvent, setNewEvent] = useState({
@@ -254,26 +257,18 @@
             });
 
             const EVENT_TYPES = [
-                { label: 'Aula', color: 'bg-blue-500' },
-                { label: 'Reunião', color: 'bg-purple-500' },
-                { label: 'Prova', color: 'bg-red-500' },
-                { label: 'Trabalho', color: 'bg-orange-500' },
-                { label: 'Pessoal', color: 'bg-green-500' },
-                { label: 'Feriado', color: 'bg-pink-500' },
-                { label: 'Sábado Letivo', color: 'bg-yellow-600' },
-                { label: 'Aula de Campo', color: 'bg-teal-500' },
+                { label: 'Aula', color: 'bg-blue-500' }, { label: 'Reunião', color: 'bg-purple-500' },
+                { label: 'Prova', color: 'bg-red-500' }, { label: 'Trabalho', color: 'bg-orange-500' },
+                { label: 'Pessoal', color: 'bg-green-500' }, { label: 'Feriado', color: 'bg-pink-500' },
+                { label: 'Sábado Letivo', color: 'bg-yellow-600' }, { label: 'Aula de Campo', color: 'bg-teal-500' },
                 { label: 'Outros', color: 'bg-gray-500' },
             ];
 
-            useEffect(() => {
-                loadEvents();
-            }, []);
+            useEffect(() => { loadEvents(); }, []);
 
             const loadEvents = async () => {
-                try {
-                    const loaded = await db.getAll('agenda_events');
-                    setEvents(loaded);
-                } catch (e) { console.error("Erro ao carregar agenda", e); }
+                try { const loaded = await db.getAll('agenda_events'); setEvents(loaded); } 
+                catch (e) { console.error("Erro ao carregar agenda", e); }
             };
 
             const resetModal = () => {
@@ -281,20 +276,10 @@
                 setEditingEventId(null);
             };
 
-            const handleAddNewClick = () => {
-                resetModal();
-                setShowEventModal(true);
-            };
+            const handleAddNewClick = () => { resetModal(); setShowEventModal(true); };
 
             const handleEditClick = (ev) => {
-                setNewEvent({ 
-                    title: ev.title, 
-                    description: ev.description, 
-                    time: ev.time, 
-                    type: ev.type, 
-                    color: ev.color, 
-                    status: ev.status || 'pending' 
-                });
+                setNewEvent({ title: ev.title, description: ev.description, time: ev.time, type: ev.type, color: ev.color, status: ev.status || 'pending' });
                 setSelectedDate(ev.date);
                 setEditingEventId(ev.id);
                 setShowEventModal(true);
@@ -302,23 +287,11 @@
 
             const handleSaveEvent = async () => {
                 if (!newEvent.title) return alert("Título é obrigatório");
-                
-                const eventToSave = {
-                    id: editingEventId || Date.now().toString(),
-                    date: selectedDate,
-                    ...newEvent
-                };
-
+                const eventToSave = { id: editingEventId || Date.now().toString(), date: selectedDate, ...newEvent };
                 await db.save(eventToSave, 'agenda_events');
-                
-                if (editingEventId) {
-                    setEvents(prev => prev.map(e => e.id === editingEventId ? eventToSave : e));
-                } else {
-                    setEvents(prev => [...prev, eventToSave]);
-                }
-                
-                setShowEventModal(false);
-                resetModal();
+                if (editingEventId) { setEvents(prev => prev.map(e => e.id === editingEventId ? eventToSave : e)); } 
+                else { setEvents(prev => [...prev, eventToSave]); }
+                setShowEventModal(false); resetModal();
             };
 
             const handleDeleteEvent = async (id) => {
@@ -331,21 +304,15 @@
             const handleToggleStatus = async (ev) => {
                 const newStatus = ev.status === 'completed' ? 'pending' : 'completed';
                 const updatedEvent = { ...ev, status: newStatus };
-                
-                // Animação de UI otimista
                 setEvents(prev => prev.map(e => e.id === ev.id ? updatedEvent : e));
-                
                 await db.save(updatedEvent, 'agenda_events');
             };
 
-            // Lógica do Calendário
             const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
             const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
 
-            const year = currentDate.getFullYear();
-            const month = currentDate.getMonth();
-            const daysInMonth = getDaysInMonth(year, month);
-            const firstDay = getFirstDayOfMonth(year, month);
+            const year = currentDate.getFullYear(); const month = currentDate.getMonth();
+            const daysInMonth = getDaysInMonth(year, month); const firstDay = getFirstDayOfMonth(year, month);
             
             const daysArray = [];
             for (let i = 0; i < firstDay; i++) daysArray.push(null);
@@ -353,25 +320,20 @@
 
             const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
-            const changeMonth = (delta) => {
-                setCurrentDate(new Date(year, month + delta, 1));
-            };
+            const changeMonth = (delta) => { setCurrentDate(new Date(year, month + delta, 1)); };
 
-            // Filtragem
             const filteredEvents = events.filter(ev => {
                 const matchesDate = ev.date === selectedDate;
                 const matchesSearch = searchTerm ? (ev.title.toLowerCase().includes(searchTerm.toLowerCase()) || ev.description.toLowerCase().includes(searchTerm.toLowerCase())) : true;
                 return searchTerm ? matchesSearch : matchesDate;
             }).sort((a,b) => a.time.localeCompare(b.time));
 
-            // Indicadores para o calendário
             const getEventsForDay = (day) => {
                 if(!day) return [];
                 const dateStr = `${year}-${String(month+1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 return events.filter(e => e.date === dateStr);
             };
 
-            // Lógica de Pendências Anteriores (Overdue)
             const todayStr = new Date().toISOString().split('T')[0];
             const overdueEvents = events.filter(ev => ev.date < todayStr && ev.status !== 'completed').sort((a,b) => a.date.localeCompare(b.date));
 
@@ -387,7 +349,6 @@
                     </div>
 
                     <div className="max-w-4xl mx-auto p-4 space-y-4">
-                        
                         {/* Seção de Pendências (Alertas) */}
                         {overdueEvents.length > 0 && !searchTerm && (
                             <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-r shadow-sm mb-4 animate-in">
@@ -399,9 +360,7 @@
                                     {overdueEvents.map(ev => (
                                         <div key={ev.id} className="bg-white p-2 rounded border border-orange-200 flex justify-between items-center text-sm">
                                             <div className="flex items-center gap-2">
-                                                <button onClick={() => handleToggleStatus(ev)} className="text-gray-400 hover:text-green-500">
-                                                    <Icons.Square size={18} />
-                                                </button>
+                                                <button onClick={() => handleToggleStatus(ev)} className="text-gray-400 hover:text-green-500"><Icons.Square size={18} /></button>
                                                 <div>
                                                     <span className="font-bold text-gray-700 block">{ev.title}</span>
                                                     <span className="text-xs text-gray-500">{formatDateTime(ev.date + 'T00:00:00').split(' ')[0]} - {ev.time}</span>
@@ -420,53 +379,32 @@
                         {/* Pesquisa */}
                         <div className="relative">
                             <Icons.Search className="absolute left-3 top-3 text-gray-400" size={18} />
-                            <input 
-                                type="text" 
-                                placeholder="Pesquisar compromissos..." 
-                                className="w-full pl-10 p-2 border rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-400 outline-none"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
+                            <input type="text" placeholder="Pesquisar compromissos..." className="w-full pl-10 p-2 border rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-400 outline-none" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                         </div>
 
                         {!searchTerm && (
                             <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-                                {/* Navegação Mês */}
                                 <div className="flex items-center justify-between p-4 bg-gray-50 border-b">
                                     <button onClick={() => changeMonth(-1)} className="p-1 hover:bg-gray-200 rounded"><Icons.ChevronLeft size={20} /></button>
                                     <span className="font-bold text-lg text-gray-800 uppercase">{monthNames[month]} {year}</span>
                                     <button onClick={() => changeMonth(1)} className="p-1 hover:bg-gray-200 rounded"><Icons.ChevronRight size={20} /></button>
                                 </div>
-                                
-                                {/* Grid Dias da Semana */}
                                 <div className="grid grid-cols-7 text-center bg-gray-100 py-2 border-b">
-                                    {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map(d => (
-                                        <span key={d} className="text-xs font-bold text-gray-500 uppercase">{d}</span>
-                                    ))}
+                                    {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map(d => ( <span key={d} className="text-xs font-bold text-gray-500 uppercase">{d}</span> ))}
                                 </div>
-
-                                {/* Grid Dias */}
                                 <div className="grid grid-cols-7 text-center">
                                     {daysArray.map((day, idx) => {
                                         if(!day) return <div key={idx} className="h-14 bg-gray-50/30 border-b border-r"></div>;
-                                        
                                         const dateStr = `${year}-${String(month+1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                                         const isSelected = selectedDate === dateStr;
                                         const isToday = new Date().toISOString().split('T')[0] === dateStr;
                                         const dayEvents = getEventsForDay(day);
-                                        const hasPending = dayEvents.some(e => e.status !== 'completed');
 
                                         return (
-                                            <div 
-                                                key={idx} 
-                                                onClick={() => setSelectedDate(dateStr)}
-                                                className={`h-14 border-b border-r relative cursor-pointer hover:bg-blue-50 transition flex flex-col items-center justify-start pt-1 ${isSelected ? 'bg-blue-100 ring-2 ring-inset ring-blue-400' : ''}`}
-                                            >
+                                            <div key={idx} onClick={() => setSelectedDate(dateStr)} className={`h-14 border-b border-r relative cursor-pointer hover:bg-blue-50 transition flex flex-col items-center justify-start pt-1 ${isSelected ? 'bg-blue-100 ring-2 ring-inset ring-blue-400' : ''}`}>
                                                 <span className={`text-sm w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-blue-600 text-white font-bold' : 'text-gray-700'}`}>{day}</span>
                                                 <div className="flex gap-0.5 mt-1 flex-wrap justify-center px-1">
-                                                    {dayEvents.slice(0, 4).map((ev, i) => (
-                                                        <div key={i} className={`w-1.5 h-1.5 rounded-full ${ev.status === 'completed' ? 'bg-gray-300' : ev.color}`}></div>
-                                                    ))}
+                                                    {dayEvents.slice(0, 4).map((ev, i) => ( <div key={i} className={`w-1.5 h-1.5 rounded-full ${ev.status === 'completed' ? 'bg-gray-300' : ev.color}`}></div> ))}
                                                     {dayEvents.length > 4 && <span className="text-[8px] text-gray-400 leading-none">+</span>}
                                                 </div>
                                             </div>
@@ -476,13 +414,11 @@
                             </div>
                         )}
 
-                        {/* Lista de Eventos do Dia Selecionado */}
                         <div>
                             <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2">
                                 {searchTerm ? <Icons.Search size={18}/> : <Icons.List size={18} />}
                                 {searchTerm ? `Resultados para "${searchTerm}"` : `Compromissos de ${new Date(selectedDate + 'T12:00:00').toLocaleDateString('pt-BR')}`}
                             </h3>
-                            
                             <div className="space-y-3">
                                 {filteredEvents.length === 0 ? (
                                     <div className="text-center py-8 text-gray-400 bg-white rounded border border-dashed">
@@ -495,15 +431,10 @@
                                         return (
                                             <div key={ev.id} className={`bg-white p-3 rounded-lg shadow-sm border border-l-4 flex justify-between items-start animate-in transition-all ${isCompleted ? 'opacity-60 bg-gray-50' : ''}`} style={{ borderLeftColor: isCompleted ? '#9ca3af' : ev.color.replace('bg-', '').replace('-500', '') }}>
                                                 <div className="flex gap-3 flex-1">
-                                                    <button onClick={() => handleToggleStatus(ev)} className={`mt-1 text-gray-400 hover:text-green-600 transition ${isCompleted ? 'text-green-600' : ''}`}>
-                                                        {isCompleted ? <Icons.CheckCircle size={24} /> : <Icons.Square size={24} />}
-                                                    </button>
+                                                    <button onClick={() => handleToggleStatus(ev)} className={`mt-1 text-gray-400 hover:text-green-600 transition ${isCompleted ? 'text-green-600' : ''}`}>{isCompleted ? <Icons.CheckCircle size={24} /> : <Icons.Square size={24} />}</button>
                                                     <div className="flex-1">
                                                         <h4 className={`font-bold text-gray-800 ${isCompleted ? 'line-through text-gray-500' : ''}`}>{ev.title}</h4>
-                                                        <p className="text-xs text-gray-500 flex items-center gap-1 mb-1">
-                                                            <Icons.Clock size={12}/> {ev.time} 
-                                                            {searchTerm && <span className="ml-2 bg-gray-100 px-1 rounded border">{formatDateTime(ev.date + 'T00:00:00').split(' ')[0]}</span>}
-                                                        </p>
+                                                        <p className="text-xs text-gray-500 flex items-center gap-1 mb-1"><Icons.Clock size={12}/> {ev.time} {searchTerm && <span className="ml-2 bg-gray-100 px-1 rounded border">{formatDateTime(ev.date + 'T00:00:00').split(' ')[0]}</span>}</p>
                                                         {ev.description && <p className={`text-sm text-gray-600 mt-1 ${isCompleted ? 'line-through' : ''}`}>{ev.description}</p>}
                                                         <span className={`inline-block mt-1 text-[10px] px-2 py-0.5 rounded text-white uppercase font-bold tracking-wide ${isCompleted ? 'bg-gray-400' : ev.color}`}>{ev.type}</span>
                                                     </div>
@@ -520,53 +451,28 @@
                         </div>
                     </div>
 
-                    {/* Modal Adicionar/Editar Evento */}
                     {showEventModal && (
                         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 animate-in">
                             <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden">
                                 <div className="bg-blue-900 text-white p-4 flex justify-between items-center">
-                                    <h3 className="font-bold flex items-center gap-2">
-                                        {editingEventId ? <Icons.Edit size={20}/> : <Icons.Plus size={20}/>} 
-                                        {editingEventId ? 'Editar Compromisso' : 'Novo Compromisso'}
-                                    </h3>
+                                    <h3 className="font-bold flex items-center gap-2">{editingEventId ? <Icons.Edit size={20}/> : <Icons.Plus size={20}/>} {editingEventId ? 'Editar Compromisso' : 'Novo Compromisso'}</h3>
                                     <button onClick={() => setShowEventModal(false)}><Icons.X /></button>
                                 </div>
                                 <div className="p-4 space-y-4">
-                                    <div>
-                                        <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Título</label>
-                                        <input type="text" className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: Reunião Pedagógica" value={newEvent.title} onChange={e => setNewEvent({...newEvent, title: e.target.value})} autoFocus />
-                                    </div>
+                                    <div><label className="text-xs font-bold text-gray-500 uppercase block mb-1">Título</label><input type="text" className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: Reunião Pedagógica" value={newEvent.title} onChange={e => setNewEvent({...newEvent, title: e.target.value})} autoFocus /></div>
                                     <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Data</label>
-                                            <input type="date" className="w-full p-2 border rounded text-sm" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} />
-                                        </div>
-                                        <div>
-                                            <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Hora</label>
-                                            <input type="time" className="w-full p-2 border rounded text-sm" value={newEvent.time} onChange={e => setNewEvent({...newEvent, time: e.target.value})} />
-                                        </div>
+                                        <div><label className="text-xs font-bold text-gray-500 uppercase block mb-1">Data</label><input type="date" className="w-full p-2 border rounded text-sm" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} /></div>
+                                        <div><label className="text-xs font-bold text-gray-500 uppercase block mb-1">Hora</label><input type="time" className="w-full p-2 border rounded text-sm" value={newEvent.time} onChange={e => setNewEvent({...newEvent, time: e.target.value})} /></div>
                                     </div>
-                                    <div>
-                                        <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Tipo</label>
+                                    <div><label className="text-xs font-bold text-gray-500 uppercase block mb-1">Tipo</label>
                                         <div className="flex gap-2 overflow-x-auto pb-1">
                                             {EVENT_TYPES.map(type => (
-                                                <button 
-                                                    key={type.label}
-                                                    onClick={() => setNewEvent({...newEvent, type: type.label, color: type.color})}
-                                                    className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition ${newEvent.type === type.label ? `${type.color} text-white ring-2 ring-offset-1 ring-gray-300` : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                                                >
-                                                    {type.label}
-                                                </button>
+                                                <button key={type.label} onClick={() => setNewEvent({...newEvent, type: type.label, color: type.color})} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition ${newEvent.type === type.label ? `${type.color} text-white ring-2 ring-offset-1 ring-gray-300` : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>{type.label}</button>
                                             ))}
                                         </div>
                                     </div>
-                                    <div>
-                                        <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Descrição</label>
-                                        <textarea className="w-full p-2 border rounded text-sm h-20" placeholder="Detalhes..." value={newEvent.description} onChange={e => setNewEvent({...newEvent, description: e.target.value})}></textarea>
-                                    </div>
-                                    <button onClick={handleSaveEvent} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow flex items-center justify-center gap-2">
-                                        <Icons.Check size={20} /> {editingEventId ? 'Atualizar' : 'Salvar na Agenda'}
-                                    </button>
+                                    <div><label className="text-xs font-bold text-gray-500 uppercase block mb-1">Descrição</label><textarea className="w-full p-2 border rounded text-sm h-20" placeholder="Detalhes..." value={newEvent.description} onChange={e => setNewEvent({...newEvent, description: e.target.value})}></textarea></div>
+                                    <button onClick={handleSaveEvent} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow flex items-center justify-center gap-2"><Icons.Check size={20} /> {editingEventId ? 'Atualizar' : 'Salvar na Agenda'}</button>
                                 </div>
                             </div>
                         </div>
@@ -576,26 +482,9 @@
         };
 
         const SignaturePad = ({ onSave, onCancel, label }) => {
-          const canvasRef = useRef(null);
-          const [isDrawing, setIsDrawing] = useState(false);
-          useEffect(() => {
-            const canvas = canvasRef.current;
-            if (canvas) {
-              setTimeout(() => {
-                  const parentWidth = canvas.parentElement.offsetWidth;
-                  canvas.width = parentWidth > 0 ? parentWidth : 300; 
-                  canvas.height = 200; 
-                  const ctx = canvas.getContext('2d');
-                  ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.strokeStyle = '#000';
-              }, 50);
-            }
-          }, []);
-          const getCoords = (e) => {
-             const canvas = canvasRef.current; const rect = canvas.getBoundingClientRect();
-             const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-             const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-             return { x: clientX - rect.left, y: clientY - rect.top };
-          };
+          const canvasRef = useRef(null); const [isDrawing, setIsDrawing] = useState(false);
+          useEffect(() => { const canvas = canvasRef.current; if (canvas) { setTimeout(() => { const parentWidth = canvas.parentElement.offsetWidth; canvas.width = parentWidth > 0 ? parentWidth : 300; canvas.height = 200; const ctx = canvas.getContext('2d'); ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.strokeStyle = '#000'; }, 50); } }, []);
+          const getCoords = (e) => { const canvas = canvasRef.current; const rect = canvas.getBoundingClientRect(); const clientX = e.clientX || (e.touches && e.touches[0].clientX); const clientY = e.clientY || (e.touches && e.touches[0].clientY); return { x: clientX - rect.left, y: clientY - rect.top }; };
           const startDrawing = (e) => { const { x, y } = getCoords(e); const ctx = canvasRef.current.getContext('2d'); ctx.beginPath(); ctx.moveTo(x, y); setIsDrawing(true); };
           const draw = (e) => { if (!isDrawing) return; e.preventDefault(); const { x, y } = getCoords(e); const ctx = canvasRef.current.getContext('2d'); ctx.lineTo(x, y); ctx.stroke(); };
           const stopDrawing = () => { setIsDrawing(false); };
@@ -605,21 +494,8 @@
           return (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 print:hidden">
               <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden animate-in">
-                <div className="p-4 border-b bg-gray-50 flex justify-between items-center">
-                  <div><h3 className="font-bold text-gray-700">Coletar Assinatura</h3><p className="text-sm text-blue-600 font-medium">{label}</p></div>
-                  <button onClick={onCancel} className="text-gray-500 hover:text-red-500"><Icons.X size={24} /></button>
-                </div>
-                <div className="p-4 bg-gray-100">
-                    <div className="bg-white border-2 border-dashed border-gray-300 rounded shadow-inner touch-action-none">
-                        <canvas ref={canvasRef} className="w-full touch-action-none cursor-crosshair block" onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={stopDrawing} onMouseLeave={stopDrawing} onTouchStart={startDrawing} onTouchMove={draw} onTouchEnd={stopDrawing} style={{ touchAction: 'none' }} />
-                    </div>
-                    <p className="text-xs text-gray-500 mt-2 text-center">Use o dedo ou mouse para assinar.</p>
-                    
-                    {/* TERMO DE AUTORIZAÇÃO DE IMAGEM/VOZ */}
-                    <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-[10px] text-yellow-800 text-justify leading-tight">
-                        <strong>Termo de Autorização:</strong> Ao assinar, declaro estar ciente e autorizo o uso da minha imagem e voz (áudio), caso tenham sido captados neste registro, exclusivamente para fins de documentação escolar e comprovação dos fatos aqui relatados, em conformidade com a LGPD.
-                    </div>
-                </div>
+                <div className="p-4 border-b bg-gray-50 flex justify-between items-center"><div><h3 className="font-bold text-gray-700">Coletar Assinatura</h3><p className="text-sm text-blue-600 font-medium">{label}</p></div><button onClick={onCancel} className="text-gray-500 hover:text-red-500"><Icons.X size={24} /></button></div>
+                <div className="p-4 bg-gray-100"><div className="bg-white border-2 border-dashed border-gray-300 rounded shadow-inner touch-action-none"><canvas ref={canvasRef} className="w-full touch-action-none cursor-crosshair block" onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={stopDrawing} onMouseLeave={stopDrawing} onTouchStart={startDrawing} onTouchMove={draw} onTouchEnd={stopDrawing} style={{ touchAction: 'none' }} /></div><p className="text-xs text-gray-500 mt-2 text-center">Use o dedo ou mouse para assinar.</p><div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-[10px] text-yellow-800 text-justify leading-tight"><strong>Termo de Autorização:</strong> Ao assinar, declaro estar ciente e autorizo o uso da minha imagem e voz (áudio), caso tenham sido captados neste registro, exclusivamente para fins de documentação escolar e comprovação dos fatos aqui relatados, em conformidade com a LGPD.</div></div>
                 <div className="p-4 border-t flex justify-between bg-white"><button onClick={clearCanvas} className="text-sm text-red-600 hover:underline font-medium">Limpar</button><div className="flex gap-2"><button onClick={onCancel} className="px-4 py-2 border rounded hover:bg-gray-50 text-sm">Cancelar</button><button onClick={handleSave} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2 text-sm font-bold shadow-sm"><Icons.Check size={16} /> Confirmar</button></div></div>
               </div>
             </div>
@@ -632,19 +508,9 @@
                     <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 relative">
                         <button onClick={onClose} className="absolute top-2 right-2 text-gray-400 hover:text-gray-800"><Icons.X size={20} /></button>
                         <div className="text-center">
-                            <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Icons.Smartphone size={32} className="text-blue-600" />
-                            </div>
+                            <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"><Icons.Smartphone size={32} className="text-blue-600" /></div>
                             <h3 className="text-lg font-bold text-gray-800 mb-2">Instalar Aplicativo</h3>
-                            {platform === 'ios' ? (
-                                <div className="text-sm text-gray-600 space-y-3 text-left bg-gray-50 p-4 rounded-lg">
-                                    <p>Para instalar no <strong>iPhone/iPad</strong>:</p>
-                                    <div className="flex items-center gap-2">1. Toque no botão <Icons.Share size={16} className="text-blue-600" /> <strong>Compartilhar</strong> do navegador.</div>
-                                    <div className="flex items-center gap-2">2. Role e selecione <span className="font-bold bg-gray-200 px-1 rounded">Adicionar à Tela de Início</span>.</div>
-                                </div>
-                            ) : (
-                                <p className="text-gray-600 mb-4">Para uma melhor experiência, adicione este aplicativo à sua tela inicial. Ele funcionará como um app nativo!</p>
-                            )}
+                            {platform === 'ios' ? (<div className="text-sm text-gray-600 space-y-3 text-left bg-gray-50 p-4 rounded-lg"><p>Para instalar no <strong>iPhone/iPad</strong>:</p><div className="flex items-center gap-2">1. Toque no botão <Icons.Share size={16} className="text-blue-600" /> <strong>Compartilhar</strong> do navegador.</div><div className="flex items-center gap-2">2. Role e selecione <span className="font-bold bg-gray-200 px-1 rounded">Adicionar à Tela de Início</span>.</div></div>) : (<p className="text-gray-600 mb-4">Para uma melhor experiência, adicione este aplicativo à sua tela inicial. Ele funcionará como um app nativo!</p>)}
                         </div>
                     </div>
                 </div>
@@ -655,230 +521,71 @@
             const [inputKey, setInputKey] = useState("");
             const [error, setError] = useState("");
 
-            const handleBuyClick = () => {
-                const message = `Olá, gostaria de adquirir uma licença para o App de Registro de Ocorridos.\n\nMeu ID do Dispositivo é: *${deviceId}*`;
-                const url = `https://wa.me/558899361992?text=${encodeURIComponent(message)}`;
-                window.open(url, '_blank');
-            };
-
-            const handleValidate = () => {
-                const check = _SecurityModule.checkAccess(inputKey.trim());
-                if (check.valid && !check.trial) {
-                    onActivate(inputKey.trim());
-                } else {
-                    setError("Chave inválida ou expirada. Verifique o código.");
-                }
-            };
+            const handleBuyClick = () => { const message = `Olá, gostaria de adquirir uma licença para o App de Registro de Ocorridos.\n\nMeu ID do Dispositivo é: *${deviceId}*`; const url = `https://wa.me/558899361992?text=${encodeURIComponent(message)}`; window.open(url, '_blank'); };
+            const handleValidate = () => { const check = _SecurityModule.checkAccess(inputKey.trim()); if (check.valid && !check.trial) { onActivate(inputKey.trim()); } else { setError("Chave inválida ou expirada. Verifique o código."); } };
 
             return (
                 <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4 print:hidden animate-in backdrop-blur-sm">
                     <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg overflow-hidden border-t-4 border-red-500">
                         <div className="p-6 text-center">
-                            <div className="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Icons.Lock size={32} className="text-red-600" />
-                            </div>
-                            {/* TÍTULO ADAPTÁVEL: Mostra "Ativar Versão Completa" se já for válido, senão mostra erro */}
-                            <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                                {status?.valid 
-                                    ? (status.trial ? 'Ativar Versão Completa' : 'Renovar Licença') 
-                                    : (status?.reason === 'Período de teste finalizado' ? 'Período de Teste Encerrado' : 'Licença Necessária')}
-                            </h2>
-                            <p className="text-gray-600 mb-6">
-                                {status?.valid 
-                                    ? 'Insira uma nova chave abaixo para atualizar ou estender sua licença.' 
-                                    : 'O modo gratuito expirou ou sua licença venceu. Para continuar, ative uma nova licença.'}
-                            </p>
-                            <div className="bg-gray-100 p-4 rounded-lg mb-6 text-left border border-gray-200">
-                                <p className="text-xs font-bold text-gray-500 uppercase mb-1">Seu ID do Dispositivo</p>
-                                <div className="flex justify-between items-center bg-white border p-2 rounded">
-                                    <code className="text-lg font-mono font-bold text-blue-600 select-all">{deviceId}</code>
-                                    <button onClick={() => {navigator.clipboard.writeText(deviceId); alert("ID copiado!")}} className="text-xs text-blue-500 hover:underline">Copiar</button>
-                                </div>
-                                <p className="text-[10px] text-gray-400 mt-1">Envie este código para adquirir sua licença.</p>
-                            </div>
-                            <button onClick={handleBuyClick} className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg shadow-md flex items-center justify-center gap-2 mb-4 transition transform hover:scale-[1.02]">
-                                <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" className="w-5 h-5" alt="WhatsApp" />
-                                Adquirir Licença via WhatsApp
-                            </button>
-                            <div className="border-t pt-4">
-                                <p className="text-sm font-medium text-gray-700 mb-2">Já recebeu a chave?</p>
-                                <div className="flex gap-2">
-                                    <input type="text" className="flex-1 border border-gray-300 rounded p-2 text-center font-mono text-sm" placeholder="Cole a chave aqui..." value={inputKey} onChange={(e) => {setInputKey(e.target.value); setError('');}} />
-                                    <button onClick={handleValidate} className="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700 text-sm">Ativar</button>
-                                </div>
-                                {error && <p className="text-red-500 text-sm mt-2 font-bold animate-pulse">{error}</p>}
-                            </div>
+                            <div className="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"><Icons.Lock size={32} className="text-red-600" /></div>
+                            <h2 className="text-2xl font-bold text-gray-800 mb-2">{status?.valid ? (status.trial ? 'Ativar Versão Completa' : 'Renovar Licença') : (status?.reason === 'Período de teste finalizado' ? 'Período de Teste Encerrado' : 'Licença Necessária')}</h2>
+                            <p className="text-gray-600 mb-6">{status?.valid ? 'Insira uma nova chave abaixo para atualizar ou estender sua licença.' : 'O modo gratuito expirou ou sua licença venceu. Para continuar, ative uma nova licença.'}</p>
+                            <div className="bg-gray-100 p-4 rounded-lg mb-6 text-left border border-gray-200"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Seu ID do Dispositivo</p><div className="flex justify-between items-center bg-white border p-2 rounded"><code className="text-lg font-mono font-bold text-blue-600 select-all">{deviceId}</code><button onClick={() => {navigator.clipboard.writeText(deviceId); alert("ID copiado!")}} className="text-xs text-blue-500 hover:underline">Copiar</button></div><p className="text-[10px] text-gray-400 mt-1">Envie este código para adquirir sua licença.</p></div>
+                            <button onClick={handleBuyClick} className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg shadow-md flex items-center justify-center gap-2 mb-4 transition transform hover:scale-[1.02]"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" className="w-5 h-5" alt="WhatsApp" /> Adquirir Licença via WhatsApp</button>
+                            <div className="border-t pt-4"><p className="text-sm font-medium text-gray-700 mb-2">Já recebeu a chave?</p><div className="flex gap-2"><input type="text" className="flex-1 border border-gray-300 rounded p-2 text-center font-mono text-sm" placeholder="Cole a chave aqui..." value={inputKey} onChange={(e) => {setInputKey(e.target.value); setError('');}} /><button onClick={handleValidate} className="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700 text-sm">Ativar</button></div>{error && <p className="text-red-500 text-sm mt-2 font-bold animate-pulse">{error}</p>}</div>
                         </div>
-                        <div className="bg-gray-50 p-3 text-center">
-                            <button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-sm underline">
-                                {status?.valid ? 'Voltar' : 'Apenas visualizar registros (Modo Leitura)'}
-                            </button>
-                        </div>
+                        <div className="bg-gray-50 p-3 text-center"><button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-sm underline">{status?.valid ? 'Voltar' : 'Apenas visualizar registros (Modo Leitura)'}</button></div>
                     </div>
                 </div>
             );
         };
 
-        // --- COMPONENTE GRAVADOR COM CONSENTIMENTO (Atualizado) ---
         const AudioRecorder = ({ onSaveAudio }) => {
-            const [recording, setRecording] = useState(false);
-            const [mediaRecorder, setMediaRecorder] = useState(null);
-            
-            // Estados de conteúdo
-            const [recordedAudioBlob, setRecordedAudioBlob] = useState(null);
-            const [isReviewing, setIsReviewing] = useState(false);
-            
-            // Consentimento e Suporte
-            const [isSupported, setIsSupported] = useState(false);
-            const [timer, setTimer] = useState(0);
-            const [consentGiven, setConsentGiven] = useState(false); // NOVO
-            
-            const timerRef = useRef(null);
-            const chunksRef = useRef([]);
+            const [recording, setRecording] = useState(false); const [mediaRecorder, setMediaRecorder] = useState(null);
+            const [recordedAudioBlob, setRecordedAudioBlob] = useState(null); const [isReviewing, setIsReviewing] = useState(false);
+            const [isSupported, setIsSupported] = useState(false); const [timer, setTimer] = useState(0); const [consentGiven, setConsentGiven] = useState(false);
+            const timerRef = useRef(null); const chunksRef = useRef([]);
 
-            useEffect(() => {
-                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                    setIsSupported(true);
-                }
-            }, []);
+            useEffect(() => { if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) { setIsSupported(true); } }, []);
 
             const startRecording = async () => {
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                     const recorder = new MediaRecorder(stream);
                     chunksRef.current = [];
-
-                    recorder.ondataavailable = (e) => {
-                        if (e.data.size > 0) chunksRef.current.push(e.data);
-                    };
-
+                    recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
                     recorder.onstop = () => {
                         const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-                        const reader = new FileReader();
-                        reader.readAsDataURL(blob);
-                        reader.onloadend = () => {
-                            setRecordedAudioBlob(reader.result); 
-                        };
+                        const reader = new FileReader(); reader.readAsDataURL(blob);
+                        reader.onloadend = () => { setRecordedAudioBlob(reader.result); };
                         stream.getTracks().forEach(track => track.stop());
                     };
-
-                    recorder.start();
-                    setMediaRecorder(recorder);
-                    setRecording(true);
-                    setIsReviewing(false);
-                    setRecordedAudioBlob(null);
-                    
-                    setTimer(0);
-                    timerRef.current = setInterval(() => setTimer(t => t + 1), 1000);
-                } catch (err) {
-                    alert("Erro ao acessar microfone. Verifique as permissões.");
-                }
+                    recorder.start(); setMediaRecorder(recorder); setRecording(true); setIsReviewing(false); setRecordedAudioBlob(null);
+                    setTimer(0); timerRef.current = setInterval(() => setTimer(t => t + 1), 1000);
+                } catch (err) { alert("Erro ao acessar microfone. Verifique as permissões."); }
             };
 
-            const stopRecording = () => {
-                if (mediaRecorder && recording) {
-                    mediaRecorder.stop();
-                    setRecording(false);
-                    setIsReviewing(true);
-                    clearInterval(timerRef.current);
-                }
-            };
-
-            const formatTimer = (seconds) => {
-                const mins = Math.floor(seconds / 60);
-                const secs = seconds % 60;
-                return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-            };
-
-            const handleSaveAll = () => {
-                if(recordedAudioBlob) onSaveAudio(recordedAudioBlob);
-                // Resetar estados
-                setIsReviewing(false);
-                setRecordedAudioBlob(null);
-                setRecording(false);
-                setConsentGiven(false); // Forçar novo consentimento para próxima gravação
-            };
+            const stopRecording = () => { if (mediaRecorder && recording) { mediaRecorder.stop(); setRecording(false); setIsReviewing(true); clearInterval(timerRef.current); } };
+            const formatTimer = (seconds) => { const mins = Math.floor(seconds / 60); const secs = seconds % 60; return `${mins}:${secs < 10 ? '0' : ''}${secs}`; };
+            const handleSaveAll = () => { if(recordedAudioBlob) onSaveAudio(recordedAudioBlob); setIsReviewing(false); setRecordedAudioBlob(null); setRecording(false); setConsentGiven(false); };
 
             if (!isSupported) return null;
 
             return (
                 <div className="bg-slate-100 border border-slate-300 rounded-lg p-4 mt-4">
-                    <div className="flex items-center justify-between mb-3 border-b border-slate-200 pb-2">
-                        <span className="text-sm font-bold uppercase text-slate-600 flex items-center gap-2">
-                            <Icons.Mic size={18} className="text-blue-600" /> Registro de Áudio
-                        </span>
-                        {recording && <span className="text-red-600 text-xs font-bold animate-pulse flex items-center gap-1">● REC {formatTimer(timer)}</span>}
-                    </div>
-
+                    <div className="flex items-center justify-between mb-3 border-b border-slate-200 pb-2"><span className="text-sm font-bold uppercase text-slate-600 flex items-center gap-2"><Icons.Mic size={18} className="text-blue-600" /> Registro de Áudio</span>{recording && <span className="text-red-600 text-xs font-bold animate-pulse flex items-center gap-1">● REC {formatTimer(timer)}</span>}</div>
                     {!recording && !isReviewing && (
                         <div className="space-y-4 animate-in fade-in">
-                            <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg text-xs text-yellow-800">
-                                <div className="flex items-center gap-2 font-bold mb-1">
-                                    <Icons.AlertTriangle size={14} /> Aviso Legal - Consentimento
-                                </div>
-                                <p className="mb-2 text-justify">
-                                    Em conformidade com a <strong>LGPD (Lei nº 13.709/2018)</strong> e o <strong>Art. 5º, X da Constituição Federal</strong>, 
-                                    a gravação de conversas requer o conhecimento e consentimento das partes envolvidas.
-                                </p>
-                                <label className="flex items-start gap-2 cursor-pointer bg-white p-2 rounded border border-yellow-300 hover:bg-yellow-100 transition">
-                                    <input 
-                                        type="checkbox" 
-                                        className="mt-0.5 w-4 h-4 text-blue-600 rounded focus:ring-blue-500" 
-                                        checked={consentGiven}
-                                        onChange={(e) => setConsentGiven(e.target.checked)}
-                                    />
-                                    <span className="font-bold">
-                                        Declaro que todos os participantes presentes foram informados e autorizaram a gravação deste áudio para fins de registro.
-                                    </span>
-                                </label>
-                            </div>
-
-                            <button 
-                                onClick={(e) => { e.preventDefault(); startRecording(); }} 
-                                disabled={!consentGiven}
-                                className={`w-full py-3 rounded-lg flex items-center justify-center gap-2 font-bold shadow-sm transition ${consentGiven ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
-                            >
-                                <Icons.Mic size={20} /> Iniciar Gravação
-                            </button>
+                            <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg text-xs text-yellow-800"><div className="flex items-center gap-2 font-bold mb-1"><Icons.AlertTriangle size={14} /> Aviso Legal - Consentimento</div><p className="mb-2 text-justify">Em conformidade com a <strong>LGPD (Lei nº 13.709/2018)</strong> e o <strong>Art. 5º, X da Constituição Federal</strong>, a gravação de conversas requer o conhecimento e consentimento das partes envolvidas.</p><label className="flex items-start gap-2 cursor-pointer bg-white p-2 rounded border border-yellow-300 hover:bg-yellow-100 transition"><input type="checkbox" className="mt-0.5 w-4 h-4 text-blue-600 rounded focus:ring-blue-500" checked={consentGiven} onChange={(e) => setConsentGiven(e.target.checked)} /><span className="font-bold">Declaro que todos os participantes presentes foram informados e autorizaram a gravação deste áudio para fins de registro.</span></label></div>
+                            <button onClick={(e) => { e.preventDefault(); startRecording(); }} disabled={!consentGiven} className={`w-full py-3 rounded-lg flex items-center justify-center gap-2 font-bold shadow-sm transition ${consentGiven ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}><Icons.Mic size={20} /> Iniciar Gravação</button>
                         </div>
                     )}
-
-                    {recording && (
-                        <div className="space-y-3 py-4 text-center">
-                            <p className="text-sm text-gray-600 animate-pulse">Gravando áudio da reunião...</p>
-                            <button 
-                                onClick={(e) => { e.preventDefault(); stopRecording(); }} 
-                                className="w-full max-w-xs mx-auto bg-slate-800 hover:bg-black text-white py-3 rounded-lg flex items-center justify-center gap-2 font-bold shadow-md recording-pulse"
-                            >
-                                <Icons.Square size={20} fill="currentColor" /> Parar Gravação
-                            </button>
-                        </div>
-                    )}
-
+                    {recording && ( <div className="space-y-3 py-4 text-center"><p className="text-sm text-gray-600 animate-pulse">Gravando áudio da reunião...</p><button onClick={(e) => { e.preventDefault(); stopRecording(); }} className="w-full max-w-xs mx-auto bg-slate-800 hover:bg-black text-white py-3 rounded-lg flex items-center justify-center gap-2 font-bold shadow-md recording-pulse"><Icons.Square size={20} fill="currentColor" /> Parar Gravação</button></div> )}
                     {isReviewing && (
                         <div className="space-y-3 animate-in fade-in">
-                            <div className="bg-white p-3 rounded border space-y-2">
-                                <label className="text-xs font-bold text-gray-500 block">Revisar Áudio</label>
-                                {recordedAudioBlob && (
-                                    <audio controls src={recordedAudioBlob} className="w-full h-10" />
-                                )}
-                            </div>
-                            
-                            <div className="flex gap-2">
-                                <button 
-                                    onClick={(e) => { e.preventDefault(); handleSaveAll(); }} 
-                                    className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg font-bold text-sm flex items-center justify-center gap-2"
-                                >
-                                    <Icons.Check size={18} /> Confirmar e Anexar
-                                </button>
-                                <button 
-                                    onClick={(e) => { e.preventDefault(); setIsReviewing(false); setRecordedAudioBlob(null); setConsentGiven(false); }} 
-                                    className="px-4 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg font-bold text-sm flex items-center gap-2"
-                                    title="Descartar"
-                                >
-                                    <Icons.Trash2 size={18} /> Descartar
-                                </button>
-                            </div>
+                            <div className="bg-white p-3 rounded border space-y-2"><label className="text-xs font-bold text-gray-500 block">Revisar Áudio</label>{recordedAudioBlob && (<audio controls src={recordedAudioBlob} className="w-full h-10" />)}</div>
+                            <div className="flex gap-2"><button onClick={(e) => { e.preventDefault(); handleSaveAll(); }} className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg font-bold text-sm flex items-center justify-center gap-2"><Icons.Check size={18} /> Confirmar e Anexar</button><button onClick={(e) => { e.preventDefault(); setIsReviewing(false); setRecordedAudioBlob(null); setConsentGiven(false); }} className="px-4 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg font-bold text-sm flex items-center gap-2" title="Descartar"><Icons.Trash2 size={18} /> Descartar</button></div>
                         </div>
                     )}
                 </div>
@@ -931,8 +638,9 @@
           const [testStatus, setTestStatus] = useState(null);
           const [aiReviewData, setAiReviewData] = useState({ isOpen: false, field: '', original: '', improved: '', loading: false });
           
-          // NOVO ESTADO: CHAT DA ASSISTENTE
+          // ESTADO: CHAT DA ASSISTENTE
           const [aiAssistantData, setAiAssistantData] = useState({ isOpen: false, loading: false, messages: [], input: '', contextData: null });
+          const [isChatListening, setIsChatListening] = useState(false);
           const chatScrollRef = useRef(null);
 
           // Efeito para auto-scroll do chat
@@ -942,6 +650,29 @@
               }
           }, [aiAssistantData.messages, aiAssistantData.loading]);
 
+          // --- FUNÇÕES DE VOZ NO CHAT ---
+          const startChatVoiceRecognition = () => {
+              const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+              if (!SpeechRecognition) {
+                  alert("Desculpe, o seu navegador não suporta reconhecimento de voz. Tente usar o Google Chrome.");
+                  return;
+              }
+              const recognition = new SpeechRecognition();
+              recognition.lang = 'pt-BR';
+              recognition.interimResults = false;
+              recognition.maxAlternatives = 1;
+
+              recognition.onstart = () => { setIsChatListening(true); };
+              recognition.onresult = (event) => {
+                  const transcript = event.results[0][0].transcript;
+                  setAiAssistantData(prev => ({ ...prev, input: (prev.input + " " + transcript).trim() }));
+              };
+              recognition.onerror = (event) => { console.error("Erro no reconhecimento de voz", event.error); setIsChatListening(false); };
+              recognition.onend = () => { setIsChatListening(false); };
+
+              recognition.start();
+          };
+
           // --- FUNÇÕES DA IA GEMINI ---
           const buildAssistantContext = async () => {
               const allEvents = await db.getAll('agenda_events');
@@ -949,34 +680,33 @@
               const todayStr = new Date().toISOString().split('T')[0];
               
               const upcomingEvents = allEvents.filter(ev => ev.date >= todayStr && ev.status !== 'completed').sort((a,b) => a.date.localeCompare(b.date));
-              const recentRecords = allRecords.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 30); // Limita aos últimos 30 para não estourar tokens
+              
+              let promptData = `\n--- DADOS DO SISTEMA (HOJE: ${new Date().toLocaleDateString('pt-BR')}) ---\n`;
+              promptData += "1. AGENDA DO PROFESSOR (Futuro e Hoje):\n";
+              if(upcomingEvents.length === 0) promptData += "Nenhum evento na agenda.\n";
+              upcomingEvents.forEach(ev => { promptData += `- Título: "${ev.title}" | Data: ${ev.date} | Hora: ${ev.time} | Tipo: ${ev.type}\n`; });
 
-              let promptData = `\n--- DADOS ATUAIS (HOJE: ${new Date().toLocaleDateString('pt-BR')}) ---\n`;
-              promptData += "1. EVENTOS FUTUROS NA AGENDA:\n";
-              if(upcomingEvents.length === 0) promptData += "Nenhum evento.\n";
-              upcomingEvents.forEach(ev => { promptData += `- [${ev.date} ${ev.time}] ${ev.title} (${ev.type})\n`; });
-
-              promptData += "\n2. LEMBRETES PENDENTES:\n";
+              promptData += "\n2. LEMBRETES ATUAIS:\n";
               if(reminders.length === 0) promptData += "Nenhum lembrete.\n";
               reminders.forEach(rem => { promptData += `- ${rem.text}\n`; });
 
-              promptData += "\n3. ÚLTIMOS REGISTROS/OCORRÊNCIAS (Para responder a perguntas):\n";
-              if(recentRecords.length === 0) promptData += "Nenhum registro.\n";
-              recentRecords.forEach(r => { promptData += `- Data: ${formatDateTime(r.data+'T'+r.hora)} | Aluno: ${r.aluno} | Tipo: ${r.tipo} | Detalhe: ${r.descricao.substring(0, 100)}...\n`; });
+              promptData += "\n3. TODOS OS REGISTROS/OCORRÊNCIAS (Base de Dados Completa):\n";
+              if(allRecords.length === 0) promptData += "Nenhum registro no momento.\n";
+              // Envia TODOS os registros para a IA (sem limite de 30) de forma compacta para pesquisa
+              allRecords.forEach(r => { promptData += `- [ID: ${r.id}] Data: ${formatDateTime(r.data+'T'+r.hora)} | Aluno: ${r.aluno} | Tipo: ${r.tipo} | Detalhes: ${r.descricao.substring(0, 150)}...\n`; });
 
               return promptData;
           };
 
           const handleAIAssistant = async () => {
               if (!geminiKey) { setShowAiConfig(true); setTempGeminiKey(''); return; }
-              
               setAiAssistantData(prev => ({ ...prev, isOpen: true, loading: true, messages: [] }));
-
               try {
                   const contextText = await buildAssistantContext();
                   setAiAssistantData(prev => ({ ...prev, contextData: contextText }));
 
-                  const prompt = `Faça um resumo acolhedor dos meus compromissos de hoje e amanhã (se houver) e liste os lembretes pendentes. Diga também que está pronta para responder perguntas sobre os registros de ocorrências ou agendar novos eventos. Use emojis.`;
+                  // NOVO PROMPT INICIAL: Não força a leitura da agenda
+                  const prompt = `Apresente-se brevemente e de forma muito acolhedora como "Assistente Virtual Nexus", a inteligência artificial do sistema. Pergunte como pode ajudar o professor hoje. Use emojis. NÃO liste a agenda ou os lembretes agora, apenas dê as boas vindas e aguarde instruções.`;
 
                   const res = await callGeminiChat(contextText, [], prompt);
                   
@@ -1005,21 +735,22 @@
               }));
 
               try {
-                  // Atualiza o contexto (se novos registros tiverem sido feitos)
+                  // Atualiza o contexto para garantir que tenha os dados mais recentes de agenda/lembretes
                   const contextText = await buildAssistantContext();
                   
                   const res = await callGeminiChat(contextText, currentHistory, userMsg);
                   let botResponse = res.text;
 
-                  // VERIFICA SE A IA DECIDIU EXECUTAR UMA AÇÃO (JSON INJETADO)
+                  // PROCESSAMENTO DE AÇÕES DA IA (JSON)
                   const jsonMatch = botResponse.match(/```json\n([\s\S]*?)\n```/);
                   if (jsonMatch) {
                       try {
                           const actionData = JSON.parse(jsonMatch[1]);
+                          
+                          // AÇÃO: ADICIONAR EVENTO
                           if (actionData.action === 'add_event') {
                               const EVENT_TYPES = { 'Aula': 'bg-blue-500', 'Reunião': 'bg-purple-500', 'Prova': 'bg-red-500', 'Trabalho': 'bg-orange-500', 'Pessoal': 'bg-green-500', 'Feriado': 'bg-pink-500', 'Outros': 'bg-gray-500' };
                               const evColor = EVENT_TYPES[actionData.type] || 'bg-blue-500';
-                              
                               const newEv = {
                                   id: Date.now().toString(),
                                   title: actionData.title,
@@ -1031,9 +762,50 @@
                                   status: 'pending'
                               };
                               await db.save(newEv, 'agenda_events');
-                              botResponse = botResponse.replace(/```json\n[\s\S]*?\n```/, '').trim(); // Remove o JSON da mensagem visível
+                              botResponse = botResponse.replace(/```json\n[\s\S]*?\n```/, '').trim();
                               botResponse += "\n\n✅ *Evento adicionado à sua agenda com sucesso!*";
+                          } 
+                          
+                          // AÇÃO: EXCLUIR EVENTO
+                          else if (actionData.action === 'delete_event') {
+                              const allEvents = await db.getAll('agenda_events');
+                              // Procura evento por parte do título (case insensitive)
+                              const targetEvent = allEvents.find(e => e.title.toLowerCase().includes(actionData.title.toLowerCase()));
+                              botResponse = botResponse.replace(/```json\n[\s\S]*?\n```/, '').trim();
+                              
+                              if (targetEvent) {
+                                  await db.delete(targetEvent.id, 'agenda_events');
+                                  botResponse += `\n\n🗑️ *Compromisso "${targetEvent.title}" (de ${targetEvent.date}) foi excluído com sucesso da sua agenda.*`;
+                              } else {
+                                  botResponse += `\n\n❌ *Não encontrei nenhum compromisso na agenda com o título contendo "${actionData.title}". Verifique o nome e tente novamente.*`;
+                              }
                           }
+                          
+                          // AÇÃO: ADICIONAR LEMBRETE RÁPIDO
+                          else if (actionData.action === 'add_reminder') {
+                              const newItem = { id: Date.now(), text: actionData.text, createdAt: new Date().toISOString() };
+                              setReminders(prev => [newItem, ...prev]);
+                              botResponse = botResponse.replace(/```json\n[\s\S]*?\n```/, '').trim();
+                              botResponse += "\n\n📌 *Lembrete rápido adicionado à sua tela inicial!*";
+                          }
+
+                          // AÇÃO: ABRIR REGISTRO ESPECÍFICO (NOVO)
+                          else if (actionData.action === 'open_record') {
+                              const allRecords = await db.getAll('records');
+                              const targetRecord = allRecords.find(r => r.id === String(actionData.id));
+                              
+                              botResponse = botResponse.replace(/```json\n[\s\S]*?\n```/, '').trim();
+                              
+                              if (targetRecord) {
+                                  setSelectedRecord(targetRecord);
+                                  setView('details');
+                                  setAiAssistantData(prev => ({ ...prev, isOpen: false, loading: false }));
+                                  return; // Sai imediatamente: fecha o chat e mostra o registro na tela
+                              } else {
+                                  botResponse += `\n\n❌ *Desculpe, não consegui localizar o registro com esse ID no sistema.*`;
+                              }
+                          }
+
                       } catch (e) { console.error("Erro ao processar ação da IA", e); }
                   }
 
@@ -1049,11 +821,11 @@
           };
 
           const callGeminiChat = async (contextText, history, newMessage) => {
-              const systemInstruction = `Você é a "Edu", uma assistente virtual educacional. Seja muito amigável, direta e profissional.
+              const systemInstruction = `Você é a "Assistente Virtual Nexus", uma assistente virtual educacional. Seja muito amigável, direta e prestativa.
               
-REGRAS:
-1. Responda dúvidas sobre registros, agenda ou lembretes baseando-se APENAS no contexto fornecido.
-2. Se o usuário pedir para criar/agendar um evento, você DEVE gerar uma mensagem amigável de confirmação E, no final da resposta, incluir estritamente este bloco JSON em markdown:
+REGRAS DE FUNCIONAMENTO:
+1. Responda a qualquer dúvida ou pesquisa sobre os registros de ocorrências, lembretes ou agenda baseando-se APENAS nos dados fornecidos no contexto.
+2. Se o usuário quiser AGENDAR / ADICIONAR um evento na agenda, gere uma confirmação amigável e inclua no final exatamente este JSON em markdown:
 \`\`\`json
 {
   "action": "add_event",
@@ -1064,11 +836,36 @@ REGRAS:
   "description": "descrição"
 }
 \`\`\`
-Opções de "type": Aula, Reunião, Prova, Trabalho, Pessoal, Feriado, Outros. (Se a data for hoje, use a data fornecida no contexto).
+Opções de type: Aula, Reunião, Prova, Trabalho, Pessoal, Feriado, Outros.
 
+3. Se o usuário quiser EXCLUIR / REMOVER um compromisso da agenda, pergunte qual é caso não esteja claro, ou se já souber o nome, gere este JSON:
+\`\`\`json
+{
+  "action": "delete_event",
+  "title": "título exato ou palavra-chave do evento"
+}
+\`\`\`
+
+4. Se o usuário pedir para criar um LEMBRETE RÁPIDO (ou anotar algo para depois), gere este JSON:
+\`\`\`json
+{
+  "action": "add_reminder",
+  "text": "Texto resumido do lembrete"
+}
+\`\`\`
+
+5. Se o usuário pedir para ABRIR, LER, VER DETALHES ou ACESSAR um registro/ocorrência específica (por nome do aluno, assunto ou data), encontre o ID correspondente na base de dados do contexto e gere este JSON no final da sua resposta:
+\`\`\`json
+{
+  "action": "open_record",
+  "id": "ID_DO_REGISTRO_AQUI"
+}
+\`\`\`
+
+DADOS DE CONTEXTO E MEMÓRIA DA ESCOLA:
 ${contextText}`;
 
-              // Formata histórico para a API da Gemini
+              // Formata histórico
               const apiHistory = history.map(m => ({
                   role: m.role === 'assistant' ? 'model' : 'user',
                   parts: [{ text: m.text }]
@@ -1081,7 +878,7 @@ ${contextText}`;
                   body: JSON.stringify({
                       systemInstruction: { parts: [{ text: systemInstruction }] },
                       contents: apiHistory,
-                      generationConfig: { temperature: 0.3 } // Baixa temperatura para manter a IA lógica e obediente a formatos JSON
+                      generationConfig: { temperature: 0.3 } 
                   })
               });
               
@@ -1094,13 +891,11 @@ ${contextText}`;
               if(!tempGeminiKey.trim()) return;
               setIsTestingKey(true); setTestStatus(null);
               try {
-                  // Faz um teste leve listando modelos para validar a chave e achar o melhor
                   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${tempGeminiKey.trim()}`);
                   const data = await res.json();
                   if (data.error) throw new Error(data.error.message);
                   
-                  // Identifica a versão da Gemini
-                  let modelToUse = 'gemini-1.5-flash'; // Padrão rápido e barato
+                  let modelToUse = 'gemini-1.5-flash';
                   if(data.models.some(m => m.name === 'models/gemini-2.5-flash')) modelToUse = 'gemini-2.5-flash';
                   else if(data.models.some(m => m.name === 'models/gemini-1.5-pro')) modelToUse = 'gemini-1.5-pro';
 
@@ -1120,7 +915,6 @@ ${contextText}`;
               if (!geminiKey) { setShowAiConfig(true); setTempGeminiKey(''); return; }
               if (!text || text.length < 15) { alert("Escreva um pouco mais antes de pedir à IA para melhorar."); return; }
 
-              // Bloqueia novas requisições enquanto carrega (evita excesso)
               setAiReviewData({ isOpen: true, field: fieldName, original: text, improved: '', loading: true });
 
               const prompt = `Você é um assistente educacional revisando um livro de ata.
@@ -1138,7 +932,7 @@ ${text}`;
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({
                           contents: [{ parts: [{ text: prompt }] }],
-                          generationConfig: { temperature: 0.2 } // Baixa temperatura para manter a fidelidade aos fatos
+                          generationConfig: { temperature: 0.2 }
                       })
                   });
                   const data = await res.json();
@@ -1162,7 +956,6 @@ ${text}`;
             setDeviceId(id);
             _SecurityModule.initTrial();
             
-            // Check license
             const checkLicense = () => {
                 const savedKey = localStorage.getItem('app_license_key_v2');
                 const status = _SecurityModule.checkAccess(savedKey);
@@ -1171,32 +964,26 @@ ${text}`;
             checkLicense();
             const interval = setInterval(checkLicense, 60000);
 
-            // CARREGAMENTO DO BANCO DE DADOS (IndexedDB em vez de LocalStorage)
             const loadData = async () => {
                 try {
                     const loadedRecords = await db.getAll('records');
                     setRecords(loadedRecords.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
                     
-                    // Migração de dados antigos do LocalStorage se existirem
                     const oldData = localStorage.getItem('registro_ocorridos_db');
                     if (oldData) {
                         try {
                             const oldRecords = JSON.parse(oldData);
                             if (Array.isArray(oldRecords) && oldRecords.length > 0 && loadedRecords.length === 0) {
                                 if(window.confirm("Encontrados registros antigos no navegador. Deseja migrar para o novo banco de dados (mais espaço)?")) {
-                                    for(let rec of oldRecords) {
-                                        await db.save(rec, 'records');
-                                    }
+                                    for(let rec of oldRecords) { await db.save(rec, 'records'); }
                                     const updated = await db.getAll('records');
                                     setRecords(updated.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
-                                    localStorage.removeItem('registro_ocorridos_db'); // Limpa para liberar espaço
+                                    localStorage.removeItem('registro_ocorridos_db'); 
                                 }
                             }
                         } catch(e) {}
                     }
-                } catch (e) {
-                    console.error("Erro ao carregar DB:", e);
-                }
+                } catch (e) { console.error("Erro ao carregar DB:", e); }
             };
             loadData();
 
@@ -1207,21 +994,17 @@ ${text}`;
             const savedReminders = localStorage.getItem('registro_ocorridos_lembretes');
             if (savedReminders) { try { setReminders(JSON.parse(savedReminders)); } catch (e) { } }
 
-            // Carrega a chave da IA guardada
             const savedGeminiKey = localStorage.getItem('gemini_api_key_v1');
             const savedGeminiModel = localStorage.getItem('gemini_api_model_v1');
             if(savedGeminiKey) { setGeminiKey(savedGeminiKey); setGeminiModel(savedGeminiModel || 'gemini-1.5-flash'); }
 
             window.addEventListener('beforeinstallprompt', (e) => {
-                // Prevent the mini-infobar from appearing on mobile
                 e.preventDefault();
-                // Stash the event so it can be triggered later.
                 setInstallPrompt(e);
             });
             return () => clearInterval(interval);
           }, []);
 
-          // Salvar apenas lembretes no localStorage (são pequenos)
           useEffect(() => { localStorage.setItem('registro_ocorridos_lembretes', JSON.stringify(reminders)); }, [reminders]);
           
           const handleSetSchoolName = (name) => { setSchoolName(name); localStorage.setItem('registro_ocorridos_school', name); };
@@ -1239,19 +1022,9 @@ ${text}`;
 
           const handleInstallClick = () => {
               const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-              if (isIOS) { 
-                  setShowInstallHelp('ios'); 
-              } else if (installPrompt) { 
-                  installPrompt.prompt(); 
-                  installPrompt.userChoice.then((choiceResult) => { 
-                      if (choiceResult.outcome === 'accepted') { 
-                          setInstallPrompt(null); 
-                      } 
-                  }); 
-              } else { 
-                  // Fallback instructions
-                  alert("Para instalar, verifique se está usando Chrome/Edge e procure a opção 'Instalar App' ou 'Adicionar à Tela Inicial' no menu do navegador. Certifique-se também que os ícones do App foram carregados corretamente."); 
-              }
+              if (isIOS) { setShowInstallHelp('ios'); } 
+              else if (installPrompt) { installPrompt.prompt(); installPrompt.userChoice.then((choiceResult) => { if (choiceResult.outcome === 'accepted') { setInstallPrompt(null); } }); } 
+              else { alert("Para instalar, verifique se está usando Chrome/Edge e procure a opção 'Instalar App' ou 'Adicionar à Tela Inicial' no menu do navegador."); }
           };
 
           const checkPermission = (actionCallback) => {
@@ -1261,197 +1034,91 @@ ${text}`;
               if (currentStatus.valid) { actionCallback(); } else { setShowLicenseModal(true); }
           };
 
-          // --- NOVO SISTEMA DE BACKUP COMPLETO (V2) COM INTEGRAÇÃO NATIVA (DRIVE/NUVEM) ---
           const handleExport = async () => {
             try {
-                // 1. Busca todos os registros e agenda
                 const savedRecords = await db.getAll('records');
                 const savedAgenda = await db.getAll('agenda_events');
-                
-                // 2. Cria objeto consolidado
-                const backupData = {
-                    version: "2.0",
-                    timestamp: new Date().toISOString(),
-                    type: "backup_completo_escolar",
-                    data: {
-                        records: savedRecords,
-                        agenda: savedAgenda
-                    }
-                };
-
+                const backupData = { version: "2.0", timestamp: new Date().toISOString(), type: "backup_completo_escolar", data: { records: savedRecords, agenda: savedAgenda } };
                 const fileName = `backup_escolar_completo_${new Date().toISOString().split('T')[0]}.json`;
                 const dataStr = JSON.stringify(backupData, null, 2);
                 const blob = new Blob([dataStr], { type: 'application/json' });
                 const file = new File([blob], fileName, { type: 'application/json' });
 
-                // 3. Tenta usar a Web Share API (Partilha Nativa para Google Drive no telemóvel)
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
                     try {
-                        await navigator.share({
-                            files: [file],
-                            title: 'Backup - Registros Escolares',
-                            text: 'Guarde este ficheiro no seu Google Drive ou envie por email para manter os seus registos seguros.',
-                        });
+                        await navigator.share({ files: [file], title: 'Backup - Registros Escolares', text: 'Guarde este ficheiro no seu Google Drive ou envie por email para manter os seus registos seguros.', });
                         alert("Backup preparado! Confirme que o ficheiro foi salvo com segurança no seu Drive/Nuvem.");
-                        return; // Sai da função, pois a partilha foi bem sucedida
-                    } catch (error) {
-                        console.log('Partilha cancelada ou falhou.', error);
-                        // Se o usuário cancelar, segue para o fallback de download abaixo
-                    }
+                        return; 
+                    } catch (error) { console.log('Partilha cancelada ou falhou.', error); }
                 }
 
-                // 4. Fallback: Download tradicional se estiver num PC ou a partilha falhar
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a'); 
-                link.href = url; 
-                link.download = fileName;
-                document.body.appendChild(link); 
-                link.click(); 
-                document.body.removeChild(link);
+                link.href = url; link.download = fileName;
+                document.body.appendChild(link); link.click(); document.body.removeChild(link);
                 URL.revokeObjectURL(url);
-                
                 alert("O backup foi transferido para a sua pasta de Downloads. Guarde-o num local seguro (ex: Google Drive).");
-
-            } catch (err) {
-                console.error(err);
-                alert("Erro ao gerar backup: " + err.message);
-            }
+            } catch (err) { console.error(err); alert("Erro ao gerar backup: " + err.message); }
           };
           
           const handleImport = (e) => {
             const file = e.target.files[0]; if (!file) return;
-            
-            // Verifica extensão manualmente
             if (file.type !== "application/json" && !file.name.endsWith('.json')) {
                 alert("Erro: O arquivo selecionado não é um backup válido (.json). Para anexar um PDF, use a opção 'Anexar PDF' dentro de um novo registro.");
-                e.target.value = null; // Reset input
-                return;
+                e.target.value = null; return;
             }
-
             const reader = new FileReader();
             reader.onload = async (event) => { 
                 try { 
                     const json = JSON.parse(event.target.result); 
-                    
                     if (window.confirm("Deseja restaurar este backup? Dados existentes serão mesclados.")) {
-                        let importedRecs = 0;
-                        let importedAgenda = 0;
-
-                        // Verifica formato V2 (Completo)
+                        let importedRecs = 0; let importedAgenda = 0;
                         if (json.type === "backup_completo_escolar" && json.data) {
-                            if (Array.isArray(json.data.records)) {
-                                for(let r of json.data.records) { await db.save(r, 'records'); }
-                                importedRecs = json.data.records.length;
-                            }
-                            if (Array.isArray(json.data.agenda)) {
-                                for(let a of json.data.agenda) { await db.save(a, 'agenda_events'); }
-                                importedAgenda = json.data.agenda.length;
-                            }
+                            if (Array.isArray(json.data.records)) { for(let r of json.data.records) { await db.save(r, 'records'); } importedRecs = json.data.records.length; }
+                            if (Array.isArray(json.data.agenda)) { for(let a of json.data.agenda) { await db.save(a, 'agenda_events'); } importedAgenda = json.data.agenda.length; }
                         } 
-                        // Suporte retroativo para V1 (Só Array de Registros)
-                        else if (Array.isArray(json)) {
-                            for(let r of json) { await db.save(r, 'records'); }
-                            importedRecs = json.length;
-                        } else {
-                            throw new Error("Formato de arquivo desconhecido.");
-                        }
-
-                        // Atualiza UI
+                        else if (Array.isArray(json)) { for(let r of json) { await db.save(r, 'records'); } importedRecs = json.length; } 
+                        else { throw new Error("Formato de arquivo desconhecido."); }
                         const updated = await db.getAll('records');
                         setRecords(updated.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
-                        
                         alert(`Restauração Concluída!\n\n📋 Registros: ${importedRecs}\n📅 Agenda: ${importedAgenda}`);
                     }
-                } catch (err) { 
-                    alert('Erro na importação: ' + err.message); 
-                } 
-                // CRUCIAL: Reseta o input para permitir importar o mesmo arquivo novamente se necessário
+                } catch (err) { alert('Erro na importação: ' + err.message); } 
                 e.target.value = null;
             };
             reader.readAsText(file);
           };
 
-          // --- NOVO HANDLER DE UPLOAD COM SUPORTE A PDF ---
           const handleAttachmentUpload = async (e, type) => {
-              const file = e.target.files[0];
-              if (!file) return;
-              
+              const file = e.target.files[0]; if (!file) return;
               let content;
-              
-              if (type === 'image') {
-                  try {
-                      content = await compressImage(file);
-                  } catch (err) {
-                      alert("Erro ao processar imagem.");
-                      return;
-                  }
-              } else if (type === 'pdf') {
-                  // Limite para PDF (ex: 20MB)
-                   if (file.size > 20 * 1024 * 1024) { 
-                      alert("Arquivo PDF muito grande (Limite 20MB)."); 
-                      return; 
-                  }
-                   content = await new Promise((resolve) => {
-                      const reader = new FileReader();
-                      reader.onloadend = () => resolve(reader.result); // Salva como Data URL (Base64)
-                      reader.readAsDataURL(file);
-                  });
-              } else {
-                  // Para áudio
-                  if (file.size > 50 * 1024 * 1024) { 
-                      alert("Arquivo de áudio muito grande (Limite 50MB)."); 
-                      return; 
-                  }
-                  content = await new Promise((resolve) => {
-                      const reader = new FileReader();
-                      reader.onloadend = () => resolve(reader.result);
-                      reader.readAsDataURL(file);
-                  });
-              }
-
+              if (type === 'image') { try { content = await compressImage(file); } catch (err) { alert("Erro ao processar imagem."); return; } } 
+              else if (type === 'pdf') { if (file.size > 20 * 1024 * 1024) { alert("Arquivo PDF muito grande (Limite 20MB)."); return; } content = await new Promise((resolve) => { const reader = new FileReader(); reader.onloadend = () => resolve(reader.result); reader.readAsDataURL(file); }); } 
+              else { if (file.size > 50 * 1024 * 1024) { alert("Arquivo de áudio muito grande (Limite 50MB)."); return; } content = await new Promise((resolve) => { const reader = new FileReader(); reader.onloadend = () => resolve(reader.result); reader.readAsDataURL(file); }); }
               const newAtt = { id: Date.now(), type: type, content: content, name: file.name };
               setFormData(prev => ({ ...prev, anexos: [...prev.anexos, newAtt] }));
-              
-              // Reset do input
               e.target.value = null;
           };
 
-          // --- Handler de Gravação de Áudio ---
           const handleAudioRecorded = (base64Audio) => {
               const newAtt = { id: Date.now(), type: 'audio', content: base64Audio, name: `Gravação de Voz ${new Date().toLocaleTimeString()}` };
               setFormData(prev => ({ ...prev, anexos: [...prev.anexos, newAtt] }));
           };
 
-          const removeAttachment = (id) => {
-              if(window.confirm("Remover este anexo?")) {
-                  setFormData(prev => ({ ...prev, anexos: prev.anexos.filter(a => a.id !== id) }));
-              }
-          };
+          const removeAttachment = (id) => { if(window.confirm("Remover este anexo?")) { setFormData(prev => ({ ...prev, anexos: prev.anexos.filter(a => a.id !== id) })); } };
 
           const handleSaveRecord = async () => {
             if (!formData.descricao) { alert("A descrição do ocorrido é obrigatória."); return; }
-            
             checkPermission(async () => {
                 const tipoFinal = formData.tipoSelecionado === 'Outros' ? formData.tipoOutro : formData.tipoSelecionado;
                 const localFinal = formData.localSelecionado === 'Outro' ? formData.localOutro : formData.localSelecionado;
                 const alunoFinal = formData.aluno.trim() || "Aluno Não Identificado";
                 
-                const recordData = { 
-                    ...formData, 
-                    id: editingId || Date.now().toString(), // Garante ID
-                    createdAt: editingId ? (records.find(r => r.id === editingId)?.createdAt || new Date().toISOString()) : new Date().toISOString(),
-                    aluno: alunoFinal, 
-                    tipo: tipoFinal, 
-                    local: localFinal 
-                };
-
-                // Salva no IndexedDB
+                const recordData = { ...formData, id: editingId || Date.now().toString(), createdAt: editingId ? (records.find(r => r.id === editingId)?.createdAt || new Date().toISOString()) : new Date().toISOString(), aluno: alunoFinal, tipo: tipoFinal, local: localFinal };
                 await db.save(recordData, 'records');
                 
-                // Atualiza estado local lendo do DB para garantir sincronia
                 const updatedRecords = await db.getAll('records');
                 setRecords(updatedRecords.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
-                
                 alert("Registro salvo com sucesso (Armazenamento Seguro)!");
                 resetForm(); setView('list');
             });
@@ -1462,14 +1129,7 @@ ${text}`;
             checkPermission(() => {
                 const isTipoPadrao = TIPOS_OCORRENCIA.includes(record.tipo);
                 const isLocalPadrao = LOCAIS.includes(record.local);
-                setFormData({
-                    ...record,
-                    anexos: record.anexos || [],
-                    tipoSelecionado: isTipoPadrao ? record.tipo : 'Outros',
-                    tipoOutro: isTipoPadrao ? '' : record.tipo,
-                    localSelecionado: isLocalPadrao ? record.local : 'Outro',
-                    localOutro: isLocalPadrao ? '' : record.local
-                });
+                setFormData({ ...record, anexos: record.anexos || [], tipoSelecionado: isTipoPadrao ? record.tipo : 'Outros', tipoOutro: isTipoPadrao ? '' : record.tipo, localSelecionado: isLocalPadrao ? record.local : 'Outro', localOutro: isLocalPadrao ? '' : record.local });
                 setEditingId(record.id); setView('create');
             });
           };
@@ -1481,54 +1141,23 @@ ${text}`;
                           await db.delete(id, 'records');
                           const updatedRecords = await db.getAll('records');
                           setRecords(updatedRecords.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
-                          if (view === 'details') {
-                              setView('list');
-                              setSelectedRecord(null);
-                          }
-                      } catch (e) {
-                          alert("Erro ao excluir: " + e);
-                      }
+                          if (view === 'details') { setView('list'); setSelectedRecord(null); }
+                      } catch (e) { alert("Erro ao excluir: " + e); }
                   }
               });
           };
 
           const resetForm = () => {
-              setFormData({
-                tipoSelecionado: TIPOS_OCORRENCIA[0], tipoOutro: '', modalidade: 'Presencial', regime: 'Bimestre',
-                periodo: '1º Bimestre', data: new Date().toISOString().split('T')[0],
-                hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-                localSelecionado: 'Sala de aula', localOutro: '', aluno: '', nivelEnsino: 'Ensino Fundamental',
-                anoTurma: '', letraTurma: '', turma: '', outrosPresentes: '', descricao: '', providencias: '', assinaturas: [], anexos: []
-              });
-              setEditingId(null); setCustomSignerName(''); setCustomSignerRole('');
-              setObfuscateSignatures(false);
+              setFormData({ tipoSelecionado: TIPOS_OCORRENCIA[0], tipoOutro: '', modalidade: 'Presencial', regime: 'Bimestre', periodo: '1º Bimestre', data: new Date().toISOString().split('T')[0], hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), localSelecionado: 'Sala de aula', localOutro: '', aluno: '', nivelEnsino: 'Ensino Fundamental', anoTurma: '', letraTurma: '', turma: '', outrosPresentes: '', descricao: '', providencias: '', assinaturas: [], anexos: [] });
+              setEditingId(null); setCustomSignerName(''); setCustomSignerRole(''); setObfuscateSignatures(false);
           };
 
-          const initiatePrint = () => { 
-              setTempSchoolName(schoolName); 
-              setTempSchoolLogo(schoolLogo); 
-              setTempObfuscate(false);
-              setShowPrintModal(true); 
-          };
-          
-          const confirmPrint = () => { 
-              handleSetSchoolName(tempSchoolName); 
-              setSchoolLogo(tempSchoolLogo); 
-              localStorage.setItem('registro_ocorridos_logo', tempSchoolLogo); 
-              setObfuscateSignatures(tempObfuscate);
-              setShowPrintModal(false); 
-              setTimeout(() => { window.print(); }, 300); 
-          };
+          const initiatePrint = () => { setTempSchoolName(schoolName); setTempSchoolLogo(schoolLogo); setTempObfuscate(false); setShowPrintModal(true); };
+          const confirmPrint = () => { handleSetSchoolName(tempSchoolName); setSchoolLogo(tempSchoolLogo); localStorage.setItem('registro_ocorridos_logo', tempSchoolLogo); setObfuscateSignatures(tempObfuscate); setShowPrintModal(false); setTimeout(() => { window.print(); }, 300); };
           
           const openSignaturePad = (name, role) => { if (!name) { alert("Preencha o nome antes."); return; } setCurrentSigner({ name, role }); setShowSignaturePad(true); };
           const handleSignatureSave = (dataUrl) => { const newSignature = { id: Date.now(), nome: currentSigner.name, cargo: currentSigner.role, tipo: 'desenho', imagem: dataUrl, timestamp: new Date().toISOString() }; setFormData(prev => ({ ...prev, assinaturas: [...prev.assinaturas, newSignature] })); setShowSignaturePad(false); if (currentSigner.role !== 'Aluno') { setCustomSignerName(''); setCustomSignerRole(''); } };
-          const handlePhotoUpload = async (e) => { 
-              const file = e.target.files[0]; if (!file) return; 
-              // Compressão também para a foto da assinatura/evidência
-              const compressed = await compressImage(file);
-              const newSignature = { id: Date.now(), nome: "Registro Fotográfico", cargo: "Evidência", tipo: 'foto', imagem: compressed, timestamp: new Date().toISOString() }; 
-              setFormData(prev => ({ ...prev, assinaturas: [...prev.assinaturas, newSignature] })); 
-          };
+          const handlePhotoUpload = async (e) => { const file = e.target.files[0]; if (!file) return; const compressed = await compressImage(file); const newSignature = { id: Date.now(), nome: "Registro Fotográfico", cargo: "Evidência", tipo: 'foto', imagem: compressed, timestamp: new Date().toISOString() }; setFormData(prev => ({ ...prev, assinaturas: [...prev.assinaturas, newSignature] })); };
           const removeSignature = (id) => { if(window.confirm("Remover esta assinatura/foto?")) setFormData(prev => ({ ...prev, assinaturas: prev.assinaturas.filter(s => s.id !== id) })); };
 
           const filteredRecords = records.filter(r => {
@@ -1555,22 +1184,19 @@ ${text}`;
                 <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-2">
                   <div className="flex items-center gap-3">
                     {!logoError ? ( <img src="./image_942213.jpg" alt="Logo" className="w-12 h-12 md:w-24 md:h-24 rounded-lg object-cover border-2 border-yellow-400 bg-white" onError={() => setLogoError(true)} /> ) : ( <Icons.BookOpen size={32} className="text-yellow-400" /> )}
-                    <div><h1 className="text-xl font-bold tracking-tight">Registros Escolares</h1><p className="text-xs text-blue-200">App desenvolvido por Lucas Sebastião Barbosa Silva</p></div>
+                    <div><h1 className="text-xl font-bold tracking-tight">Registros Escolares</h1><p className="text-xs text-blue-200">App desenvolvido pela Nexus Soluções Inteligentes</p></div>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap justify-center">
                      
-                     {/* BOTÃO DE CONFIGURAÇÃO DA IA */}
                      <button onClick={() => {setTempGeminiKey(geminiKey); setShowAiConfig(true);}} className={`flex items-center gap-1 text-[10px] md:text-xs px-3 py-1.5 rounded-full border transition shadow-sm ${geminiKey ? 'bg-purple-900 text-purple-200 border-purple-700 hover:bg-purple-800' : 'bg-transparent text-purple-300 border-purple-500 hover:bg-purple-900/50'}`} title="Configurar Assistente de IA">
                          <Icons.Sparkles size={14} /> {geminiKey ? 'IA Ativa' : 'Configurar IA'}
                      </button>
 
-                     {/* BOTÃO DE INSTALAÇÃO INTELIGENTE: SÓ APARECE SE TIVER PROMPT OU IOS */}
                      {(installPrompt || /iPad|iPhone|iPod/.test(navigator.userAgent)) ? (
                         <button onClick={handleInstallClick} className="flex items-center gap-1 text-[10px] md:text-xs bg-blue-800 hover:bg-blue-700 text-white border border-blue-500 px-3 py-1.5 rounded-full transition shadow-sm animate-pulse">
                             <Icons.Smartphone size={14} /> Instalar App
                         </button>
                      ) : (
-                         /* BOTÃO DESATIVADO OU INFORMATIVO PARA ANDROID/PC SEM PROMPT */
                          <span className="flex items-center gap-1 text-[10px] md:text-xs bg-blue-900/50 text-blue-300 border border-blue-800 px-3 py-1.5 rounded-full cursor-help" title="Instalação automática indisponível no momento" onClick={() => setShowInstallHelp('android')}>
                              <Icons.Info size={14} /> App Web
                          </span>
@@ -1581,12 +1207,7 @@ ${text}`;
                             <Icons.Lock size={14} /> Bloqueado - Ativar Licença
                         </button> 
                      ) : ( 
-                        /* AGORA CLICÁVEL: PERMITE INSERIR LICENÇA A QUALQUER MOMENTO */
-                        <button 
-                            onClick={() => setShowLicenseModal(true)} 
-                            className={`flex items-center gap-1 text-[10px] md:text-xs px-3 py-1.5 rounded-full font-bold shadow-sm border transition transform hover:scale-105 active:scale-95 ${licenseStatus.trial ? 'bg-yellow-500 text-black border-yellow-400' : 'bg-green-600 text-white border-green-400'}`}
-                            title="Clique para gerenciar ou renovar sua licença"
-                        > 
+                        <button onClick={() => setShowLicenseModal(true)} className={`flex items-center gap-1 text-[10px] md:text-xs px-3 py-1.5 rounded-full font-bold shadow-sm border transition transform hover:scale-105 active:scale-95 ${licenseStatus.trial ? 'bg-yellow-500 text-black border-yellow-400' : 'bg-green-600 text-white border-green-400'}`} title="Clique para gerenciar ou renovar sua licença"> 
                             {licenseStatus.trial ? <Icons.Clock size={14} /> : <Icons.ShieldCheck size={14} />} 
                             {licenseStatus.trial ? `Teste: ${licenseStatus.minutesLeft}m restantes` : `Licenciado (${licenseStatus.daysLeft} dias)`}
                         </button> 
@@ -1596,37 +1217,23 @@ ${text}`;
               </header>
 
               <main className="max-w-5xl mx-auto p-4 pb-20 print:p-0 print:max-w-none flex-grow w-full">
-                {/* ... (Conteúdo Principal Mantido) ... */}
-                {view === 'agenda' && (
-                    <TeacherAgenda onBack={() => setView('list')} />
-                )}
+                {view === 'agenda' && ( <TeacherAgenda onBack={() => setView('list')} /> )}
 
                 {view === 'list' && (
                   <div className="print:hidden space-y-6">
-                    {/* Botões de Acesso Rápido e IA */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="bg-white rounded-lg shadow p-3 flex items-center justify-between border-l-4 border-l-purple-600 hover:shadow-md transition cursor-pointer" onClick={() => setView('agenda')}>
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-purple-100 rounded-full text-purple-700">
-                                    <Icons.CalendarDays size={24} />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-gray-800">Minha Agenda</h3>
-                                    <p className="text-xs text-gray-500">Gerencie aulas e reuniões</p>
-                                </div>
+                                <div className="p-2 bg-purple-100 rounded-full text-purple-700"><Icons.CalendarDays size={24} /></div>
+                                <div><h3 className="font-bold text-gray-800">Minha Agenda</h3><p className="text-xs text-gray-500">Gerencie aulas e reuniões</p></div>
                             </div>
                             <Icons.ChevronRight className="text-gray-400" />
                         </div>
 
                         <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg shadow p-3 flex items-center justify-between hover:shadow-md transition cursor-pointer text-white" onClick={handleAIAssistant}>
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-white/20 rounded-full text-white">
-                                    <Icons.Bot size={24} />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold">Assistente Virtual (IA)</h3>
-                                    <p className="text-xs text-indigo-100">Resumo da sua agenda e lembretes</p>
-                                </div>
+                                <div className="p-2 bg-white/20 rounded-full text-white"><Icons.Bot size={24} /></div>
+                                <div><h3 className="font-bold">Assistente Virtual Nexus</h3><p className="text-xs text-indigo-100">Pesquisas, lembretes e agenda</p></div>
                             </div>
                             <Icons.Sparkles className="text-indigo-200" />
                         </div>
@@ -1718,11 +1325,9 @@ ${text}`;
                               </div>
                               <textarea className="w-full p-3 border rounded h-32 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Descreva detalhadamente ou use o microfone para gravar e ditar..." value={formData.descricao} onChange={e => setFormData({...formData, descricao: e.target.value})}></textarea>
                               
-                              {/* NOVO: Gravador com Consentimento */}
                               <AudioRecorder onSaveAudio={handleAudioRecorded} />
 
                               <div className="flex gap-2 mt-4 items-start flex-wrap">
-                                  {/* Botões de Upload Manuais ATUALIZADOS */}
                                   <label className="cursor-pointer bg-white hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2 border border-gray-300 shadow-sm transition">
                                       <Icons.ImagePlus size={16} className="text-blue-600" /> Upload Foto (Comprimida)
                                       <input type="file" accept="image/*" className="hidden" onChange={(e) => handleAttachmentUpload(e, 'image')} />
@@ -1731,7 +1336,6 @@ ${text}`;
                                       <Icons.FileAudio size={16} className="text-orange-500" /> Upload Arquivo Áudio
                                       <input type="file" accept="audio/*" className="hidden" onChange={(e) => handleAttachmentUpload(e, 'audio')} />
                                   </label>
-                                  {/* NOVO: Upload de PDF */}
                                   <label className="cursor-pointer bg-white hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2 border border-gray-300 shadow-sm transition">
                                       <Icons.File size={16} className="text-red-600" /> Anexar PDF
                                       <input type="file" accept="application/pdf" className="hidden" onChange={(e) => handleAttachmentUpload(e, 'pdf')} />
@@ -1829,7 +1433,6 @@ ${text}`;
                                 {selectedRecord.assinaturas.filter(s => s.tipo !== 'foto').map(sig => (
                                     <div key={sig.id} className="flex flex-col items-center break-inside-avoid">
                                         <div className="h-28 w-full border-b border-gray-800 mb-1 flex items-end justify-center pb-1 relative print:h-16">
-                                            {/* APLICAÇÃO DO BORRÃO (BLUR) SE ATIVADO */}
                                             <img src={sig.imagem} className={`max-h-24 max-w-full object-contain print:max-h-14 transition-all duration-300 ${obfuscateSignatures ? 'blur-[4px] grayscale opacity-70' : ''}`} alt={`Assinatura`} />
                                         </div>
                                         <p className="font-bold text-sm text-center leading-tight print:text-xs">{sig.nome}</p>
@@ -1841,7 +1444,6 @@ ${text}`;
                         )}
                       </div>
 
-                      {/* --- SEÇÃO DE REGISTROS FOTOGRÁFICOS (Vindos da Assinatura) MOVIDA PARA O FINAL --- */}
                       {selectedRecord.assinaturas.filter(s => s.tipo === 'foto').length > 0 && (
                           <div className="mt-8 pt-4 border-t-2 border-dashed border-gray-300 page-break-before break-inside-avoid print:mt-4">
                               <h4 className="text-sm font-bold text-gray-800 uppercase mb-4 print:mb-2 flex items-center gap-2"><Icons.Camera size={16}/> Evidências Fotográficas (Assinaturas/Registros)</h4>
@@ -1854,7 +1456,6 @@ ${text}`;
                                               </div>
                                               <span className="text-[10px] bg-gray-200 px-2 py-0.5 rounded text-gray-700">{sig.cargo}</span>
                                           </div>
-                                          {/* Imagem configurada para ser grande e legível COM OPÇÃO DE OFUSCAÇÃO */}
                                           <img src={sig.imagem} alt="Registro Fotográfico" className={`w-full h-auto max-h-[800px] object-contain rounded bg-white border shadow-sm print:shadow-none print:max-h-[600px] mx-auto block transition-all duration-300 ${obfuscateSignatures ? 'blur-md opacity-80' : ''}`} />
                                           <div className="mt-2 text-[10px] text-gray-500 text-center">
                                               Registro em {new Date(sig.timestamp).toLocaleDateString()} às {new Date(sig.timestamp).toLocaleTimeString()}
@@ -1866,7 +1467,6 @@ ${text}`;
                           </div>
                       )}
 
-                      {/* --- SEÇÃO DE ANEXOS MOVIDA PARA O FINAL E REDIMENSIONADA --- */}
                       {selectedRecord.anexos && selectedRecord.anexos.length > 0 && (
                           <div className="mt-8 pt-4 border-t-2 border-dashed border-gray-300 page-break-before break-inside-avoid print:mt-4">
                               <h4 className="text-sm font-bold text-gray-800 uppercase mb-4 print:mb-2 flex items-center gap-2"><Icons.Paperclip size={16}/> Anexos e Evidências</h4>
@@ -1878,7 +1478,6 @@ ${text}`;
                                                   <div className="flex items-center gap-2 mb-2 text-xs font-bold text-gray-600 uppercase border-b pb-1">
                                                       <Icons.ImageIcon size={14} /> Evidência Visual: {att.name}
                                                   </div>
-                                                  {/* Imagem configurada para ser grande e legível */}
                                                   <img src={att.content} alt="Anexo" className="w-full h-auto max-h-[800px] object-contain rounded bg-white border shadow-sm print:shadow-none print:max-h-[600px] mx-auto block" />
                                               </div>
                                           ) : att.type === 'pdf' ? (
@@ -1892,15 +1491,8 @@ ${text}`;
                                                   <div className="bg-white p-4 rounded border text-center space-y-2">
                                                       <Icons.FileText size={48} className="text-red-500 mx-auto" />
                                                       <p className="text-xs text-gray-500">Documento PDF Anexado</p>
-                                                      <a 
-                                                        href={att.content} 
-                                                        download={att.name || `documento_registro_${selectedRecord.id}_${att.id}.pdf`}
-                                                        className="bg-red-100 hover:bg-red-200 text-red-800 text-xs px-4 py-2 rounded font-bold inline-flex items-center gap-2 transition"
-                                                      >
-                                                        <Icons.Download size={14} /> Baixar PDF
-                                                      </a>
+                                                      <a href={att.content} download={att.name || `documento_registro_${selectedRecord.id}_${att.id}.pdf`} className="bg-red-100 hover:bg-red-200 text-red-800 text-xs px-4 py-2 rounded font-bold inline-flex items-center gap-2 transition"><Icons.Download size={14} /> Baixar PDF</a>
                                                   </div>
-                                                  <p className="text-[10px] text-gray-500 italic mt-1">* Os PDFs anexados ficam salvos dentro do aplicativo.</p>
                                               </div>
                                           ) : (
                                               <div className="flex flex-col gap-2">
@@ -1909,18 +1501,9 @@ ${text}`;
                                                           <Icons.Mic size={16} className="text-red-600" />
                                                           <span className="text-sm font-bold text-gray-700">Registro de Áudio: {att.name}</span>
                                                       </div>
-                                                      <a 
-                                                        href={att.content} 
-                                                        download={`audio_registro_${selectedRecord.id}_${att.id}.webm`}
-                                                        className="print:hidden bg-blue-100 hover:bg-blue-200 text-blue-800 text-xs px-3 py-1 rounded font-bold flex items-center gap-1 transition"
-                                                      >
-                                                        <Icons.Download size={12} /> Baixar Arquivo Original
-                                                      </a>
+                                                      <a href={att.content} download={`audio_registro_${selectedRecord.id}_${att.id}.webm`} className="print:hidden bg-blue-100 hover:bg-blue-200 text-blue-800 text-xs px-3 py-1 rounded font-bold flex items-center gap-1 transition"><Icons.Download size={12} /> Baixar Arquivo Original</a>
                                                   </div>
-                                                  <div className="bg-white p-2 rounded border">
-                                                      <audio controls src={att.content} className="w-full h-10" />
-                                                  </div>
-                                                  <p className="text-[10px] text-gray-500 italic mt-1">* O arquivo de áudio está salvo seguramente no banco de dados deste aplicativo. Use o botão "Baixar" para salvar uma cópia externa.</p>
+                                                  <div className="bg-white p-2 rounded border"><audio controls src={att.content} className="w-full h-10" /></div>
                                               </div>
                                           )}
                                       </div>
@@ -1929,8 +1512,8 @@ ${text}`;
                           </div>
                       )}
                       
-                      <div className="hidden print:block w-full text-center text-[10px] text-gray-400 border-t pt-2 mt-4 print:relative print:mt-4 print:border-t print:pt-1">Documento gerado digitalmente pelo App Registro de Ocorridos (Prof. Lucas Sebastião Barbosa Silva). Válido como registro escolar.<br /> Proteção de Dados: Conformidade com Lei nº 13.709/2018 (LGPD).</div>
-                      <div className="pt-8 border-t mt-8 print:hidden flex justify-between items-center bg-gray-50 -mx-8 px-8 pb-4 rounded-b-lg"><div className="text-xs text-gray-400">App desenvolvido por Lucas Sebastião Barbosa Silva</div><button onClick={initiatePrint} className="flex items-center gap-2 bg-gray-800 text-white px-6 py-3 rounded-lg shadow hover:bg-black transition font-bold"><Icons.Printer size={20} /> Imprimir PDF (A4)</button></div>
+                      <div className="hidden print:block w-full text-center text-[10px] text-gray-400 border-t pt-2 mt-4 print:relative print:mt-4 print:border-t print:pt-1">Documento gerado digitalmente pelo App Registro de Ocorridos (Nexus Soluções Inteligentes). Válido como registro escolar.<br /> Proteção de Dados: Conformidade com Lei nº 13.709/2018 (LGPD).</div>
+                      <div className="pt-8 border-t mt-8 print:hidden flex justify-between items-center bg-gray-50 -mx-8 px-8 pb-4 rounded-b-lg"><div className="text-xs text-gray-400">App desenvolvido pela Nexus Soluções Inteligentes</div><button onClick={initiatePrint} className="flex items-center gap-2 bg-gray-800 text-white px-6 py-3 rounded-lg shadow hover:bg-black transition font-bold"><Icons.Printer size={20} /> Imprimir PDF (A4)</button></div>
                     </div>
                   </div>
                 )}
@@ -1938,16 +1521,9 @@ ${text}`;
 
               <footer className="bg-slate-100 border-t p-6 text-center text-[10px] text-gray-500 print:hidden mt-auto space-y-4">
                 <div className="max-w-4xl mx-auto border-b border-gray-200 pb-4 text-justify">
-                    <div className="flex flex-col items-center gap-2 mb-2">
-                        <Icons.Database size={20} className="text-blue-900" />
-                        <h4 className="font-bold text-xs text-blue-900 uppercase">Aviso Legal de Privacidade e Armazenamento (Offline)</h4>
-                    </div>
-                    <p className="mb-2">
-                        <strong>1. ARMAZENAMENTO LOCAL E EXCLUSIVO:</strong> Este aplicativo opera sob o princípio de <em>Local Storage</em>. Todos os registros, imagens e áudios são gravados <strong>exclusivamente na memória interna deste dispositivo</strong>. Não realizamos coleta, transmissão ou backup de dados para servidores na nuvem (internet). O aplicativo funciona como um diário de classe digital, sem conexão externa para armazenamento.
-                    </p>
-                    <p>
-                        <strong>2. CONFORMIDADE COM A LGPD E SEGURANÇA:</strong> Nos termos da <strong>Lei nº 13.709/2018 (LGPD)</strong>, o usuário do dispositivo é o único Controlador dos dados aqui inseridos. A segurança, integridade e confidencialidade das informações dependem exclusivamente da proteção física e lógica (senha/biometria) deste aparelho. O desenvolvedor não tem acesso aos seus dados. Recomenda-se a realização periódica de backups manuais (Botão "Fazer Backup").
-                    </p>
+                    <div className="flex flex-col items-center gap-2 mb-2"><Icons.Database size={20} className="text-blue-900" /><h4 className="font-bold text-xs text-blue-900 uppercase">Aviso Legal de Privacidade e Armazenamento (Offline)</h4></div>
+                    <p className="mb-2"><strong>1. ARMAZENAMENTO LOCAL E EXCLUSIVO:</strong> Este aplicativo opera sob o princípio de <em>Local Storage</em>. Todos os registros, imagens e áudios são gravados <strong>exclusivamente na memória interna deste dispositivo</strong>. Não realizamos coleta, transmissão ou backup de dados para servidores na nuvem (internet). O aplicativo funciona como um diário de classe digital, sem conexão externa para armazenamento.</p>
+                    <p><strong>2. CONFORMIDADE COM A LGPD E SEGURANÇA:</strong> Nos termos da <strong>Lei nº 13.709/2018 (LGPD)</strong>, o usuário do dispositivo é o único Controlador dos dados aqui inseridos. A segurança, integridade e confidencialidade das informações dependem exclusivamente da proteção física e lógica (senha/biometria) deste aparelho. O desenvolvedor não tem acesso aos seus dados. Recomenda-se a realização periódica de backups manuais (Botão "Fazer Backup").</p>
                 </div>
                 <div className="max-w-4xl mx-auto text-gray-400 leading-relaxed text-[9px]">
                     <p className="font-bold mb-1">PROPRIEDADE INTELECTUAL</p>
@@ -1963,18 +1539,11 @@ ${text}`;
                           <div className="space-y-4">
                               <div><label className="block text-sm font-medium text-gray-700 mb-2">Nome da Escola</label><div className="relative"><Icons.School className="absolute left-3 top-3 text-gray-400" size={18} /><input type="text" className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: Escola Municipal Joaquim Távora" value={tempSchoolName} onChange={(e) => setTempSchoolName(e.target.value)} autoFocus /></div></div>
                               <div><label className="block text-sm font-medium text-gray-700 mb-2">Logo da Escola (Opcional)</label><div className="flex items-center gap-4"><label className="cursor-pointer bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg shadow-sm hover:bg-gray-50 text-sm flex items-center gap-2 font-medium transition hover:border-blue-500"><Icons.ImageIcon size={18} /> Escolher Imagem<input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} /></label>{tempSchoolLogo && (<div className="h-14 w-14 border rounded bg-gray-50 flex items-center justify-center overflow-hidden relative group"><img src={tempSchoolLogo} alt="Preview" className="h-full w-full object-contain" /><button onClick={() => setTempSchoolLogo('')} className="absolute inset-0 bg-black bg-opacity-50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition" title="Remover Logo"><Icons.X size={16} /></button></div>)}</div></div>
-                              
-                              {/* CHECKBOX DE OFUSCAÇÃO */}
                               <div className="border-t pt-4 mt-2">
                                   <label className="flex items-center gap-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg cursor-pointer hover:bg-yellow-100 transition">
-                                      <div className={`w-5 h-5 border-2 rounded flex items-center justify-center transition-colors ${tempObfuscate ? 'bg-blue-600 border-blue-600' : 'border-gray-400 bg-white'}`}>
-                                          {tempObfuscate && <Icons.Check size={14} className="text-white" />}
-                                      </div>
+                                      <div className={`w-5 h-5 border-2 rounded flex items-center justify-center transition-colors ${tempObfuscate ? 'bg-blue-600 border-blue-600' : 'border-gray-400 bg-white'}`}>{tempObfuscate && <Icons.Check size={14} className="text-white" />}</div>
                                       <input type="checkbox" className="hidden" checked={tempObfuscate} onChange={(e) => setTempObfuscate(e.target.checked)} />
-                                      <div className="flex-1">
-                                          <span className="block text-sm font-bold text-gray-800">Ofuscar Assinaturas (Proteção de Dados)</span>
-                                          <span className="block text-xs text-gray-500">Borra as imagens das assinaturas na impressão para conformidade com a LGPD.</span>
-                                      </div>
+                                      <div className="flex-1"><span className="block text-sm font-bold text-gray-800">Ofuscar Assinaturas (Proteção de Dados)</span><span className="block text-xs text-gray-500">Borra as imagens das assinaturas na impressão para conformidade com a LGPD.</span></div>
                                       <Icons.ShieldCheck className="text-yellow-600" size={20} />
                                   </label>
                               </div>
@@ -1993,28 +1562,20 @@ ${text}`;
                               <button onClick={() => setShowAiConfig(false)} className="text-purple-400 hover:text-purple-800"><Icons.X size={20} /></button>
                           </div>
                           <div className="p-5 space-y-4">
-                              <div className="text-sm text-gray-600 text-justify">
-                                  Para usar a correção gramatical inteligente, precisa fornecer uma chave da API do <strong>Google Gemini</strong>. Esta chave fica salva apenas no seu dispositivo.
-                              </div>
+                              <div className="text-sm text-gray-600 text-justify">Para usar a IA, precisa fornecer uma chave da API do <strong>Google Gemini</strong>. Esta chave fica salva apenas no seu dispositivo.</div>
                               <div>
                                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Sua Chave API (Gemini)</label>
                                   <input type="password" placeholder="AIzaSy..." className="w-full p-3 border rounded focus:ring-2 focus:ring-purple-400 outline-none font-mono text-sm" value={tempGeminiKey} onChange={(e) => {setTempGeminiKey(e.target.value); setTestStatus(null);}} />
                                   <p className="text-[10px] text-gray-400 mt-1"><a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-purple-500 hover:underline">Clique aqui para gerar a sua chave gratuitamente.</a></p>
                               </div>
-
                               {testStatus && (
                                   <div className={`p-3 rounded text-sm font-bold flex items-start gap-2 ${testStatus.success ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
-                                      {testStatus.success ? <Icons.CheckCircle size={18} /> : <Icons.AlertTriangle size={18} />}
-                                      <span>{testStatus.message}</span>
+                                      {testStatus.success ? <Icons.CheckCircle size={18} /> : <Icons.AlertTriangle size={18} />}<span>{testStatus.message}</span>
                                   </div>
                               )}
-
                               <div className="flex gap-2 pt-2 border-t mt-4">
                                   <button onClick={() => {setGeminiKey(''); setGeminiModel(''); localStorage.removeItem('gemini_api_key_v1'); localStorage.removeItem('gemini_api_model_v1'); setTestStatus({success: true, message: "Chave removida."}); setTempGeminiKey('');}} className="px-4 py-2 border rounded text-red-600 hover:bg-red-50 text-sm font-medium w-full">Remover Chave</button>
-                                  <button onClick={testGeminiKey} disabled={!tempGeminiKey || isTestingKey} className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 font-bold shadow-md flex items-center justify-center gap-2 w-full disabled:opacity-50">
-                                      {isTestingKey ? <Icons.Loader2 size={16} className="animate-spin" /> : <Icons.Settings size={16} />} 
-                                      {isTestingKey ? 'Testando...' : 'Testar e Salvar'}
-                                  </button>
+                                  <button onClick={testGeminiKey} disabled={!tempGeminiKey || isTestingKey} className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 font-bold shadow-md flex items-center justify-center gap-2 w-full disabled:opacity-50">{isTestingKey ? <Icons.Loader2 size={16} className="animate-spin" /> : <Icons.Settings size={16} />} {isTestingKey ? 'Testando...' : 'Testar e Salvar'}</button>
                               </div>
                           </div>
                       </div>
@@ -2025,35 +1586,21 @@ ${text}`;
               {aiReviewData.isOpen && !aiReviewData.loading && (
                   <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[70] p-4 animate-in">
                       <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full flex flex-col max-h-[90vh]">
-                          <div className="bg-gradient-to-r from-purple-700 to-purple-900 p-4 flex justify-between items-center rounded-t-xl shrink-0">
-                              <h3 className="font-bold text-white flex items-center gap-2"><Icons.Wand2 /> Revisão Sugerida pela IA</h3>
-                              <button onClick={() => setAiReviewData({...aiReviewData, isOpen: false})} className="text-white/70 hover:text-white"><Icons.X size={24} /></button>
-                          </div>
+                          <div className="bg-gradient-to-r from-purple-700 to-purple-900 p-4 flex justify-between items-center rounded-t-xl shrink-0"><h3 className="font-bold text-white flex items-center gap-2"><Icons.Wand2 /> Revisão Sugerida pela IA</h3><button onClick={() => setAiReviewData({...aiReviewData, isOpen: false})} className="text-white/70 hover:text-white"><Icons.X size={24} /></button></div>
                           <div className="p-4 md:p-6 overflow-y-auto space-y-4 bg-gray-50 flex-grow">
-                              <div className="bg-white p-3 rounded-lg border shadow-sm">
-                                  <label className="text-xs font-bold text-gray-400 uppercase mb-2 block border-b pb-1">Texto Original</label>
-                                  <p className="text-sm text-gray-500 italic whitespace-pre-wrap">{aiReviewData.original}</p>
-                              </div>
-                              
+                              <div className="bg-white p-3 rounded-lg border shadow-sm"><label className="text-xs font-bold text-gray-400 uppercase mb-2 block border-b pb-1">Texto Original</label><p className="text-sm text-gray-500 italic whitespace-pre-wrap">{aiReviewData.original}</p></div>
                               <div className="bg-white p-3 rounded-lg border-2 border-purple-300 shadow-md relative">
                                   <div className="absolute top-0 right-0 transform translate-x-2 -translate-y-3 bg-purple-200 text-purple-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-purple-300">Pode editar antes de aplicar</div>
                                   <label className="text-xs font-bold text-purple-700 uppercase mb-2 flex items-center gap-1 border-b pb-1"><Icons.Sparkles size={14}/> Texto Melhorado</label>
-                                  <textarea 
-                                      className="w-full text-sm text-gray-800 whitespace-pre-wrap outline-none min-h-[150px] resize-y p-2 focus:bg-purple-50 rounded transition" 
-                                      value={aiReviewData.improved} 
-                                      onChange={(e) => setAiReviewData({...aiReviewData, improved: e.target.value})}
-                                  />
+                                  <textarea className="w-full text-sm text-gray-800 whitespace-pre-wrap outline-none min-h-[150px] resize-y p-2 focus:bg-purple-50 rounded transition" value={aiReviewData.improved} onChange={(e) => setAiReviewData({...aiReviewData, improved: e.target.value})} />
                               </div>
                           </div>
-                          <div className="p-4 border-t bg-white flex justify-end gap-3 rounded-b-xl shrink-0">
-                              <button onClick={() => setAiReviewData({...aiReviewData, isOpen: false})} className="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 font-bold hover:bg-gray-50">Descartar</button>
-                              <button onClick={applyAiText} className="px-5 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-bold shadow-lg flex items-center gap-2 transition transform hover:scale-105"><Icons.Check size={18} /> Aprovar e Substituir</button>
-                          </div>
+                          <div className="p-4 border-t bg-white flex justify-end gap-3 rounded-b-xl shrink-0"><button onClick={() => setAiReviewData({...aiReviewData, isOpen: false})} className="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 font-bold hover:bg-gray-50">Descartar</button><button onClick={applyAiText} className="px-5 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-bold shadow-lg flex items-center gap-2 transition transform hover:scale-105"><Icons.Check size={18} /> Aprovar e Substituir</button></div>
                       </div>
                   </div>
               )}
 
-              {/* MODAL ASSISTENTE VIRTUAL IA (CHAT) */}
+              {/* MODAL ASSISTENTE VIRTUAL IA (CHAT COM VOZ) */}
               {aiAssistantData.isOpen && (
                   <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[70] p-4 animate-in md:p-6">
                       <div className="bg-slate-50 rounded-xl shadow-2xl max-w-lg w-full h-[85vh] flex flex-col overflow-hidden border border-indigo-200">
@@ -2066,8 +1613,8 @@ ${text}`;
                                       <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-white rounded-full"></span>
                                   </div>
                                   <div>
-                                      <h3 className="font-bold text-white leading-tight">Edu (Assistente Virtual)</h3>
-                                      <p className="text-[10px] text-indigo-200 font-medium">Pronta para agendar e informar</p>
+                                      <h3 className="font-bold text-white leading-tight">Assistente Virtual Nexus</h3>
+                                      <p className="text-[10px] text-indigo-200 font-medium">Pronta para ajudar</p>
                                   </div>
                               </div>
                               <button onClick={() => setAiAssistantData({...aiAssistantData, isOpen: false})} className="text-white/70 hover:text-white p-1 bg-white/10 rounded-full transition"><Icons.X size={20} /></button>
@@ -2096,19 +1643,30 @@ ${text}`;
                               )}
                           </div>
 
-                          {/* ÁREA DE INPUT DE TEXTO */}
+                          {/* ÁREA DE INPUT DE TEXTO E VOZ */}
                           <div className="p-3 bg-white border-t border-gray-200 shrink-0">
                               <form 
                                   onSubmit={(e) => { e.preventDefault(); handleSendChatMessage(); }} 
                                   className="flex items-center gap-2 bg-slate-50 p-1 rounded-full border border-gray-300 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-200 transition"
                               >
+                                  {/* BOTÃO DE MICROFONE */}
+                                  <button 
+                                      type="button"
+                                      onClick={startChatVoiceRecognition}
+                                      disabled={aiAssistantData.loading}
+                                      className={`p-2 rounded-full transition-colors ${isChatListening ? 'text-red-500 bg-red-100 mic-listening' : 'text-gray-500 hover:text-indigo-600 hover:bg-indigo-50'}`}
+                                      title="Falar mensagem"
+                                  >
+                                      <Icons.Mic size={20} />
+                                  </button>
+
                                   <input 
                                       type="text" 
-                                      placeholder="Pergunte ou peça para agendar algo..." 
-                                      className="flex-grow bg-transparent border-none focus:outline-none px-4 text-sm text-gray-700"
+                                      placeholder={isChatListening ? "Ouvindo..." : "Pergunte algo ou peça para agendar..."}
+                                      className="flex-grow bg-transparent border-none focus:outline-none px-2 text-sm text-gray-700"
                                       value={aiAssistantData.input}
                                       onChange={(e) => setAiAssistantData({...aiAssistantData, input: e.target.value})}
-                                      disabled={aiAssistantData.loading}
+                                      disabled={aiAssistantData.loading || isChatListening}
                                       autoFocus
                                   />
                                   <button 
@@ -2120,7 +1678,7 @@ ${text}`;
                                   </button>
                               </form>
                               <div className="text-center mt-2 text-[10px] text-gray-400">
-                                  Ex: "Quantas ocorrências o João tem?" ou "Agendar reunião com diretoria amanhã às 15h"
+                                  Ex: "Exclua a prova de amanhã" ou "Quantas ocorrências o João tem?"
                               </div>
                           </div>
                       </div>
