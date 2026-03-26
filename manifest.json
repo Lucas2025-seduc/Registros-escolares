@@ -1,6 +1,6 @@
 {
   "name": "Registro de Ocorridos Escolar",
-  "short_name": "SchoolConduct",
+  "short_name": "Registrosescolares",
   "id": "app-registro-escolar-v2",
   "start_url": "./",
   "display": "standalone",
