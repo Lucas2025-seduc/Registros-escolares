@@ -934,6 +934,7 @@
           const [showLicenseModal, setShowLicenseModal] = useState(false);
           const [installPrompt, setInstallPrompt] = useState(null);
           const [showInstallHelp, setShowInstallHelp] = useState(false);
+          const [previewImage, setPreviewImage] = useState(null); // NOVO ESTADO
 
           const [formData, setFormData] = useState({
             tipoSelecionado: TIPOS_OCORRENCIA[0], tipoOutro: '', modalidade: 'Presencial', regime: 'Bimestre', 
@@ -1814,7 +1815,7 @@ ${text}`;
                                               <div className="flex items-center gap-2 overflow-hidden">
                                                   {/* MOSTRA THUMBNAIL DA IMAGEM */}
                                                   {att.type === 'image' ? (
-                                                      <img src={att.content} alt="preview" className="h-8 w-8 object-cover rounded border" />
+                                                      <img src={att.content} alt="preview" className="h-8 w-8 object-cover rounded border cursor-pointer hover:opacity-80 transition" onClick={() => setPreviewImage(att.content)} title="Clique para ampliar" />
                                                   ) : att.type === 'pdf' ? (
                                                       <Icons.FileText size={16} className="text-red-500" />
                                                   ) : (
@@ -1882,7 +1883,7 @@ ${text}`;
                                             )}
 
                                             <div className="h-24 bg-gray-50 flex items-center justify-center mb-2 overflow-hidden rounded relative">
-                                                <img src={sig.imagem} alt="Assinatura" className="max-h-full max-w-full object-contain" />
+                                                <img src={sig.imagem} alt="Assinatura" className="max-h-full max-w-full object-contain cursor-pointer hover:opacity-80 transition" onClick={() => setPreviewImage(sig.imagem)} title="Clique para ampliar" />
                                                 {sig.tipo === 'foto' && (<div className="absolute bottom-0 w-full bg-black bg-opacity-60 text-white text-[9px] text-center py-0.5">{formatDateTime(formData.data + 'T' + formData.hora)}</div>)}
                                             </div>
                                             <div className="text-xs font-bold truncate">{sig.nome}</div>
@@ -1967,7 +1968,7 @@ ${text}`;
                                               <span className="text-[10px] bg-gray-200 px-2 py-0.5 rounded text-gray-700">{sig.cargo}</span>
                                           </div>
                                           {/* Imagem configurada para ser grande e legível COM OPÇÃO DE OFUSCAÇÃO */}
-                                          <img src={sig.imagem} alt="Registro Fotográfico" className={`w-full h-auto max-h-[800px] object-contain rounded bg-white border shadow-sm print:shadow-none print:max-h-[600px] mx-auto block transition-all duration-300 ${obfuscateSignatures ? 'blur-md opacity-80' : ''}`} />
+                                          <img src={sig.imagem} alt="Registro Fotográfico" className={`w-full h-auto max-h-[800px] object-contain rounded bg-white border shadow-sm print:shadow-none print:max-h-[600px] mx-auto block cursor-pointer hover:opacity-90 transition-all duration-300 ${obfuscateSignatures ? 'blur-md opacity-80 cursor-not-allowed' : ''}`} onClick={() => !obfuscateSignatures && setPreviewImage(sig.imagem)} title={obfuscateSignatures ? "Ofuscado" : "Clique para ampliar"} />
                                           <div className="mt-2 text-[10px] text-gray-500 text-center">
                                               Registro em {new Date(sig.timestamp).toLocaleDateString()} às {new Date(sig.timestamp).toLocaleTimeString()}
                                               <span className="hidden print:inline"> | Ref. Data Ocorrido: {formatDateTime(selectedRecord.data + 'T' + selectedRecord.hora)}</span>
@@ -1991,7 +1992,7 @@ ${text}`;
                                                       <Icons.ImageIcon size={14} /> Evidência Visual: {att.name}
                                                   </div>
                                                   {/* Imagem configurada para ser grande e legível */}
-                                                  <img src={att.content} alt="Anexo" className="w-full h-auto max-h-[800px] object-contain rounded bg-white border shadow-sm print:shadow-none print:max-h-[600px] mx-auto block" />
+                                                  <img src={att.content} alt="Anexo" className="w-full h-auto max-h-[800px] object-contain rounded bg-white border shadow-sm print:shadow-none print:max-h-[600px] mx-auto block cursor-pointer hover:opacity-90 transition" onClick={() => setPreviewImage(att.content)} title="Clique para ampliar" />
                                               </div>
                                           ) : att.type === 'pdf' ? (
                                               <div className="flex flex-col gap-2">
@@ -2243,6 +2244,16 @@ ${text}`;
               {showLicenseModal && (<LicenseModal deviceId={deviceId} status={licenseStatus} onClose={() => setShowLicenseModal(false)} onActivate={handleActivateLicense} />)}
               {showInstallHelp && (<InstallPrompt platform={showInstallHelp} onClose={() => setShowInstallHelp(false)} />)}
               
+              {/* MODAL DE VISUALIZAÇÃO DE IMAGEM EM TAMANHO GRANDE */}
+              {previewImage && (
+                  <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[100] p-4 animate-in print:hidden" onClick={() => setPreviewImage(null)}>
+                      <button className="absolute top-4 right-4 text-white hover:text-gray-300 p-2 z-10" onClick={() => setPreviewImage(null)}>
+                          <Icons.X size={32} />
+                      </button>
+                      <img src={previewImage} alt="Visualização Expandida" className="max-w-full max-h-full object-contain cursor-zoom-out" onClick={(e) => { e.stopPropagation(); setPreviewImage(null); }} />
+                  </div>
+              )}
+
               <footer className="md:hidden fixed bottom-0 w-full bg-white border-t p-2 flex justify-around text-xs text-gray-600 z-30 print:hidden">
                 <button onClick={() => { setView('list'); resetForm(); }} className={`flex flex-col items-center p-2 ${view === 'list' ? 'text-blue-600' : ''}`}><Icons.BookOpen size={20} /> Início</button>
                 <button onClick={() => checkPermission(() => { setView('create'); resetForm(); })} className={`flex flex-col items-center p-2 ${view === 'create' && !editingId ? 'text-blue-600' : ''}`}><Icons.Plus size={20} /> Novo</button>
