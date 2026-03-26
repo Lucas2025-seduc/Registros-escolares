@@ -1371,46 +1371,51 @@ ${text}`;
             reader.readAsText(file);
           };
 
-          // --- NOVO HANDLER DE UPLOAD COM SUPORTE A PDF ---
+          // --- NOVO HANDLER DE UPLOAD COM SUPORTE A MÚLTIPLOS ARQUIVOS ---
           const handleAttachmentUpload = async (e, type) => {
-              const file = e.target.files[0];
-              if (!file) return;
+              const files = Array.from(e.target.files);
+              if (!files.length) return;
               
-              let content;
+              const newAttachments = [];
               
-              if (type === 'image') {
-                  try {
-                      content = await compressImage(file);
-                  } catch (err) {
-                      alert("Erro ao processar imagem.");
-                      return;
+              for (const file of files) {
+                  let content;
+                  
+                  if (type === 'image') {
+                      try {
+                          content = await compressImage(file);
+                      } catch (err) {
+                          alert(`Erro ao processar a imagem ${file.name}.`);
+                          continue;
+                      }
+                  } else if (type === 'pdf') {
+                      // Limite para PDF (ex: 20MB)
+                       if (file.size > 20 * 1024 * 1024) { 
+                          alert(`Arquivo PDF muito grande (Limite 20MB): ${file.name}`); 
+                          continue; 
+                      }
+                       content = await new Promise((resolve) => {
+                          const reader = new FileReader();
+                          reader.onloadend = () => resolve(reader.result); // Salva como Data URL (Base64)
+                          reader.readAsDataURL(file);
+                      });
+                  } else {
+                      // Para áudio
+                      if (file.size > 50 * 1024 * 1024) { 
+                          alert(`Arquivo de áudio muito grande (Limite 50MB): ${file.name}`); 
+                          continue; 
+                      }
+                      content = await new Promise((resolve) => {
+                          const reader = new FileReader();
+                          reader.onloadend = () => resolve(reader.result);
+                          reader.readAsDataURL(file);
+                      });
                   }
-              } else if (type === 'pdf') {
-                  // Limite para PDF (ex: 20MB)
-                   if (file.size > 20 * 1024 * 1024) { 
-                      alert("Arquivo PDF muito grande (Limite 20MB)."); 
-                      return; 
-                  }
-                   content = await new Promise((resolve) => {
-                      const reader = new FileReader();
-                      reader.onloadend = () => resolve(reader.result); // Salva como Data URL (Base64)
-                      reader.readAsDataURL(file);
-                  });
-              } else {
-                  // Para áudio
-                  if (file.size > 50 * 1024 * 1024) { 
-                      alert("Arquivo de áudio muito grande (Limite 50MB)."); 
-                      return; 
-                  }
-                  content = await new Promise((resolve) => {
-                      const reader = new FileReader();
-                      reader.onloadend = () => resolve(reader.result);
-                      reader.readAsDataURL(file);
-                  });
+
+                  newAttachments.push({ id: Date.now() + Math.random(), type: type, content: content, name: file.name });
               }
 
-              const newAtt = { id: Date.now(), type: type, content: content, name: file.name };
-              setFormData(prev => ({ ...prev, anexos: [...prev.anexos, newAtt] }));
+              setFormData(prev => ({ ...prev, anexos: [...prev.anexos, ...newAttachments] }));
               
               // Reset do input
               e.target.value = null;
@@ -1523,11 +1528,17 @@ ${text}`;
           const openSignaturePad = (name, role) => { if (!name) { alert("Preencha o nome antes."); return; } setCurrentSigner({ name, role }); setShowSignaturePad(true); };
           const handleSignatureSave = (dataUrl) => { const newSignature = { id: Date.now(), nome: currentSigner.name, cargo: currentSigner.role, tipo: 'desenho', imagem: dataUrl, timestamp: new Date().toISOString() }; setFormData(prev => ({ ...prev, assinaturas: [...prev.assinaturas, newSignature] })); setShowSignaturePad(false); if (currentSigner.role !== 'Aluno') { setCustomSignerName(''); setCustomSignerRole(''); } };
           const handlePhotoUpload = async (e) => { 
-              const file = e.target.files[0]; if (!file) return; 
-              // Compressão também para a foto da assinatura/evidência
-              const compressed = await compressImage(file);
-              const newSignature = { id: Date.now(), nome: "Registro Fotográfico", cargo: "Evidência", tipo: 'foto', imagem: compressed, timestamp: new Date().toISOString() }; 
-              setFormData(prev => ({ ...prev, assinaturas: [...prev.assinaturas, newSignature] })); 
+              const files = Array.from(e.target.files);
+              if (!files.length) return; 
+              
+              const newSignatures = [];
+              for (const file of files) {
+                  // Compressão também para a foto da assinatura/evidência
+                  const compressed = await compressImage(file);
+                  newSignatures.push({ id: Date.now() + Math.random(), nome: "Registro Fotográfico", cargo: "Evidência", tipo: 'foto', imagem: compressed, timestamp: new Date().toISOString() }); 
+              }
+              setFormData(prev => ({ ...prev, assinaturas: [...prev.assinaturas, ...newSignatures] })); 
+              e.target.value = null;
           };
           const removeSignature = (id) => { if(window.confirm("Remover esta assinatura/foto?")) setFormData(prev => ({ ...prev, assinaturas: prev.assinaturas.filter(s => s.id !== id) })); };
 
@@ -1724,17 +1735,17 @@ ${text}`;
                               <div className="flex gap-2 mt-4 items-start flex-wrap">
                                   {/* Botões de Upload Manuais ATUALIZADOS */}
                                   <label className="cursor-pointer bg-white hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2 border border-gray-300 shadow-sm transition">
-                                      <Icons.ImagePlus size={16} className="text-blue-600" /> Upload Foto (Comprimida)
-                                      <input type="file" accept="image/*" className="hidden" onChange={(e) => handleAttachmentUpload(e, 'image')} />
+                                      <Icons.ImagePlus size={16} className="text-blue-600" /> Upload Fotos (Comprimidas)
+                                      <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleAttachmentUpload(e, 'image')} />
                                   </label>
                                   <label className="cursor-pointer bg-white hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2 border border-gray-300 shadow-sm transition">
-                                      <Icons.FileAudio size={16} className="text-orange-500" /> Upload Arquivo Áudio
-                                      <input type="file" accept="audio/*" className="hidden" onChange={(e) => handleAttachmentUpload(e, 'audio')} />
+                                      <Icons.FileAudio size={16} className="text-orange-500" /> Upload Arquivos Áudio
+                                      <input type="file" accept="audio/*" multiple className="hidden" onChange={(e) => handleAttachmentUpload(e, 'audio')} />
                                   </label>
                                   {/* NOVO: Upload de PDF */}
                                   <label className="cursor-pointer bg-white hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2 border border-gray-300 shadow-sm transition">
-                                      <Icons.File size={16} className="text-red-600" /> Anexar PDF
-                                      <input type="file" accept="application/pdf" className="hidden" onChange={(e) => handleAttachmentUpload(e, 'pdf')} />
+                                      <Icons.File size={16} className="text-red-600" /> Anexar PDFs
+                                      <input type="file" accept="application/pdf" multiple className="hidden" onChange={(e) => handleAttachmentUpload(e, 'pdf')} />
                                   </label>
                               </div>
 
@@ -1775,7 +1786,7 @@ ${text}`;
                       <div className="border-t pt-4 bg-blue-50 -mx-6 px-6 pb-6"><h3 className="font-semibold text-gray-800 mb-3 mt-4 flex items-center gap-2"><Icons.PenTool size={18} /> Assinaturas</h3>
                         <div className="grid md:grid-cols-2 gap-6">
                             <div className="space-y-3"><p className="text-xs font-bold text-gray-500 uppercase">Assinatura do Aluno</p><button onClick={() => openSignaturePad(formData.aluno || 'Aluno', 'Aluno')} className="w-full bg-white border border-blue-300 text-blue-700 px-4 py-3 rounded-lg shadow-sm hover:bg-blue-50 text-sm flex items-center justify-center gap-2 font-medium"><Icons.PenTool size={16} /> Assinar como Aluno</button>
-                                <div className="mt-4"><p className="text-xs font-bold text-gray-500 uppercase mb-2">Registro por imagem</p><div className="grid grid-cols-2 gap-2"><label className="w-full bg-white border border-gray-300 text-gray-700 px-2 py-3 rounded-lg shadow-sm hover:bg-gray-50 text-sm flex flex-col items-center justify-center gap-1 font-medium cursor-pointer text-center"><Icons.Camera size={20} /> <span>Câmera</span><input type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhotoUpload} /></label><label className="w-full bg-white border border-gray-300 text-gray-700 px-2 py-3 rounded-lg shadow-sm hover:bg-gray-50 text-sm flex flex-col items-center justify-center gap-1 font-medium cursor-pointer text-center"><Icons.ImageIcon size={20} /> <span>Galeria</span><input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} /></label></div></div>
+                                <div className="mt-4"><p className="text-xs font-bold text-gray-500 uppercase mb-2">Registro por imagem</p><div className="grid grid-cols-2 gap-2"><label className="w-full bg-white border border-gray-300 text-gray-700 px-2 py-3 rounded-lg shadow-sm hover:bg-gray-50 text-sm flex flex-col items-center justify-center gap-1 font-medium cursor-pointer text-center"><Icons.Camera size={20} /> <span>Câmera</span><input type="file" accept="image/*" capture="environment" multiple className="hidden" onChange={handlePhotoUpload} /></label><label className="w-full bg-white border border-gray-300 text-gray-700 px-2 py-3 rounded-lg shadow-sm hover:bg-gray-50 text-sm flex flex-col items-center justify-center gap-1 font-medium cursor-pointer text-center"><Icons.ImageIcon size={20} /> <span>Galeria</span><input type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoUpload} /></label></div></div>
                             </div>
                             <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm"><p className="text-xs font-bold text-gray-500 uppercase mb-2">Outros Participantes</p><div className="space-y-2"><input type="text" placeholder="Nome" className="w-full p-2 border rounded text-sm" value={customSignerName} onChange={e => setCustomSignerName(e.target.value)} /><input type="text" placeholder="Cargo/Função" className="w-full p-2 border rounded text-sm" value={customSignerRole} onChange={e => setCustomSignerRole(e.target.value)} /><button onClick={() => openSignaturePad(customSignerName, customSignerRole)} disabled={!customSignerName || !customSignerRole} className="w-full bg-gray-800 text-white px-4 py-2 rounded disabled:opacity-50 hover:bg-gray-900 text-sm flex items-center justify-center gap-2"><Icons.PenTool size={14} /> Coletar Assinatura</button></div></div>
                         </div>
